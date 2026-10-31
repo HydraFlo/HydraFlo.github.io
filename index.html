@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Yue Cao — robotics. Interactive Unitree Go2 loaded from its URDF.">
+<meta name="description" content="Yue Cao — robot perception and robot learning. M.Sc. Computer Science, KIT.">
 <title>Yue Cao</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: fog-filled valley stage with a Unitree Go2 loaded from its URDF; UI tucked into the four corners like an instrument readout; link-indexed cards below. */
+/* Layout: one fixed 3D canvas behind a scrolling story — hero, four project chapters with side panels, then an opaque CV section. */
 :root{
   --fog:#8e889c;
   --bg:#17151c;
@@ -25,51 +25,56 @@
   color-scheme:dark;
 }
 *{box-sizing:border-box}
-html,body{background:var(--bg);color:var(--ink)}
-body{font-family:var(--font-body);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
-button{font:inherit;color:inherit}
+html{background:var(--bg)}
+body{margin:0;background:var(--fog);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit}
 :focus-visible{outline:1px solid var(--copper);outline-offset:3px}
+[hidden]{display:none!important}
 
-/* ---------- stage ---------- */
-.stage{position:relative;height:clamp(600px,92vh,900px);overflow:hidden;isolation:isolate;background:var(--fog)}
-#gl{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:0;touch-action:none;cursor:grab}
+/* ---------- fixed stage layers ---------- */
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0;cursor:grab}
 #gl.hover{cursor:pointer}
-.vignette{position:absolute;inset:0;z-index:1;pointer-events:none;
+.vignette{position:fixed;inset:0;z-index:1;pointer-events:none;
   background:radial-gradient(120% 90% at 50% 55%,transparent 45%,rgba(24,20,32,.55) 100%),linear-gradient(180deg,rgba(24,20,32,.35),transparent 28%,transparent 62%,rgba(24,20,32,.62))}
-.grain{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.12;mix-blend-mode:overlay;
+.grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.12;mix-blend-mode:overlay;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
-#leaders{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
+#leaders{position:fixed;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
 #leaders line{stroke:var(--ink);stroke-width:1;transition:opacity .35s}
 #leaders path{stroke:var(--ink);stroke-width:1;fill:none;transition:opacity .35s}
-.co{position:absolute;left:0;top:0;z-index:2;font-family:var(--font-mono);font-size:11.5px;letter-spacing:.03em;color:var(--ink);
+#callouts{position:fixed;inset:0;z-index:2;pointer-events:none}
+.co{position:absolute;left:0;top:0;font-family:var(--font-mono);font-size:11.5px;letter-spacing:.03em;color:var(--ink);
   white-space:nowrap;pointer-events:none;text-shadow:0 1px 8px rgba(20,16,28,.6);font-variant-numeric:tabular-nums;transition:opacity .35s}
 .co .k{opacity:.65}
-.co.tag{pointer-events:auto;cursor:pointer;border:0;background:rgba(23,21,28,.74);padding:6px 10px 6px 8px;border-radius:3px;display:flex;gap:8px;align-items:baseline;text-shadow:none}
+.co.tag{cursor:pointer;border:0;background:rgba(23,21,28,.74);padding:6px 10px 6px 8px;border-radius:3px;display:flex;gap:8px;align-items:baseline;text-shadow:none}
 .co.tag:hover{background:rgba(23,21,28,.92)}
 .co.tag .no{color:var(--copper)}
 .co.tag .zh{font-family:var(--font-body);font-weight:700;font-size:13px;letter-spacing:0}
-.hint{position:absolute;left:0;top:0;z-index:3;pointer-events:none;font-family:var(--font-mono);font-size:11.5px;letter-spacing:.06em;
+.hint{position:fixed;left:0;top:0;z-index:3;pointer-events:none;font-family:var(--font-mono);font-size:11.5px;letter-spacing:.06em;
   color:var(--bg);background:var(--copper);padding:5px 9px;border-radius:2px;white-space:nowrap;transition:opacity .4s;opacity:0}
-.loader{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3;font-family:var(--font-mono);font-size:12px;letter-spacing:.06em;color:var(--ink);text-align:center;
+.loader{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:4;font-family:var(--font-mono);font-size:12px;letter-spacing:.06em;color:var(--ink);text-align:center;
   text-shadow:0 1px 10px rgba(20,16,28,.5);transition:opacity .5s;max-width:min(420px,calc(100% - 40px))}
 .loader .bar{width:180px;height:1px;background:rgba(239,235,243,.25);margin:10px auto 0;position:relative;overflow:hidden}
 .loader .bar i{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--copper);transition:width .2s}
 .loader code{display:block;margin-top:10px;color:var(--copper);user-select:all}
 
-.ui{position:absolute;inset:0;z-index:3;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;
+/* ---------- story ---------- */
+#story{position:relative;z-index:3;pointer-events:none}
+.hero{position:relative;height:100vh;height:100svh;min-height:600px}
+.ui{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;
   padding-block:28px 24px;padding-left:max(28px,env(safe-area-inset-left,0px));padding-right:max(28px,env(safe-area-inset-right,0px));
   text-shadow:0 1px 10px rgba(20,16,28,.45)}
 .row2{display:flex;justify-content:space-between;align-items:flex-start;gap:24px}
 .row2.bot{align-items:flex-end}
 .row2 > *{pointer-events:auto}
-.ident{max-width:30rem}
+.ident{max-width:32rem}
 .lbl{font-family:var(--font-mono);font-size:12px;letter-spacing:.06em;color:var(--muted);margin-bottom:8px}
 h1{font-family:var(--font-display);font-weight:700;font-size:clamp(32px,4.6vw,58px);line-height:1.04;margin:0 0 12px;letter-spacing:-.01em;text-wrap:balance}
-.tagline{margin:0;font-family:var(--font-mono);font-size:13px;line-height:1.7;color:var(--ink);opacity:.85;max-width:24rem}
+.tagline{margin:0;font-family:var(--font-mono);font-size:13px;line-height:1.7;opacity:.88;max-width:27rem}
+.scrollcue{font-family:var(--font-mono);font-size:12px;color:var(--copper);margin-top:14px;display:inline-block}
 
 .opts{display:flex;gap:4px 18px;flex-wrap:wrap}
 .opts.v{flex-direction:column;align-items:flex-end;gap:2px}
-.opt{border:0;background:transparent;padding:4px 0;cursor:pointer;font-family:var(--font-mono);font-size:12.5px;letter-spacing:.03em;color:var(--ink);opacity:.72;
+.opt{border:0;background:transparent;padding:4px 0;cursor:pointer;font-family:var(--font-mono);font-size:12.5px;letter-spacing:.03em;opacity:.72;
   display:inline-flex;align-items:center;gap:8px;white-space:nowrap;transition:opacity .2s,color .2s}
 .opt::before{content:"";width:7px;height:7px;border:1px solid currentColor;flex:none}
 .opt:hover{opacity:1}
@@ -77,52 +82,96 @@ h1{font-family:var(--font-display);font-weight:700;font-size:clamp(32px,4.6vw,58
 .opt[aria-pressed="true"]::before{background:currentColor}
 .opt .zh{font-family:var(--font-body)}
 .opt .en{opacity:.6}
-.right{text-align:right}
+.right{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:18px}
 .sw{width:14px;height:14px;border:1px solid rgba(255,255,255,.55);flex:none}
 .opt.fin::before{display:none}
 .opt.fin[aria-pressed="true"] .sw{outline:1px solid var(--copper);outline-offset:2px}
 .br{display:flex;flex-direction:column;align-items:flex-end;gap:12px}
+.har{font-family:var(--font-mono);font-size:11.5px;text-align:right}
+.har canvas{display:block;width:160px;height:40px;margin:2px 0 4px auto}
+.har .pred b{color:var(--copper);font-weight:400}
 
-.panel{position:absolute;z-index:4;top:50%;right:max(28px,env(safe-area-inset-right,0px));transform:translateY(-50%);width:min(340px,calc(100% - 40px));
-  background:rgba(23,21,28,.9);border:1px solid var(--line);border-radius:4px;padding:20px 22px 22px;
-  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+/* chapters */
+.chap{position:relative;min-height:115vh;display:flex;align-items:center;
+  padding-block:12vh;padding-left:max(28px,env(safe-area-inset-left,0px));padding-right:max(28px,env(safe-area-inset-right,0px))}
+.cpanel{pointer-events:auto;width:min(420px,100%);background:rgba(23,21,28,.8);border:1px solid var(--line);border-radius:4px;
+  padding:24px 24px 20px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:flex;flex-direction:column;gap:16px}
+.cno{font-family:var(--font-mono);font-size:12px;letter-spacing:.06em;color:var(--copper)}
+.cpanel h2{font-family:var(--font-display);font-weight:500;font-size:21px;line-height:1.3;margin:0;text-wrap:balance}
+.cmeta{font-family:var(--font-mono);font-size:12px;color:var(--muted);margin-top:6px}
+.cpanel p{margin:0;color:#ddd8e4;font-size:14.5px}
+.ctl{display:flex;flex-direction:column;gap:8px}
+.ctl .lbl{margin:0}
+.seg{display:flex;border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.seg button{flex:1;border:0;background:transparent;padding:7px 6px;cursor:pointer;font-family:var(--font-mono);font-size:12px;color:var(--muted);transition:background .2s,color .2s;min-width:0}
+.seg button + button{border-left:1px solid var(--line)}
+.seg button:hover{color:var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--copper);color:#1a1612}
+.btn{align-self:flex-start;border:1px solid var(--copper);background:transparent;color:var(--copper);border-radius:3px;padding:7px 14px;cursor:pointer;font-family:var(--font-mono);font-size:12.5px}
+.btn:hover{background:var(--copper);color:#1a1612}
+.btn.ghost{border-color:var(--line);color:var(--muted)}
+.btn.ghost:hover{background:transparent;color:var(--ink);border-color:var(--ink)}
+.btns{display:flex;gap:10px;flex-wrap:wrap}
+input[type=range]{width:100%;accent-color:var(--copper)}
+.rng{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:11.5px;color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line)}
+.stats div{background:rgba(23,21,28,.9);padding:9px 10px;min-width:0}
+.stats b{display:block;font-family:var(--font-mono);font-weight:500;font-size:17px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.stats span{font-family:var(--font-mono);font-size:10.5px;color:var(--muted);letter-spacing:.04em}
+.bars{display:flex;flex-direction:column;gap:6px;font-family:var(--font-mono);font-size:11.5px}
+.bars .r{display:grid;grid-template-columns:86px minmax(0,1fr) 36px;gap:8px;align-items:center;color:var(--muted)}
+.bars .r.on{color:var(--ink)}
+.bars .t{height:4px;background:rgba(239,235,243,.12);position:relative}
+.bars .t i{position:absolute;left:0;top:0;bottom:0;background:var(--copper);transition:width .5s}
+.bars .v{text-align:right;font-variant-numeric:tabular-nums}
+.pad{width:100%;aspect-ratio:16/9;max-width:100%;display:block;background:rgba(239,235,243,.04);border:1px solid var(--line);border-radius:3px;cursor:crosshair;touch-action:none}
+.status{font-family:var(--font-mono);font-size:12px;color:var(--copper);min-height:1.2em}
+.disc{font-family:var(--font-mono);font-size:11px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px}
+
+/* exploded-view panel */
+.panel{position:fixed;z-index:5;top:50%;right:max(28px,env(safe-area-inset-right,0px));transform:translateY(-50%);width:min(340px,calc(100% - 40px));
+  background:rgba(23,21,28,.92);border:1px solid var(--line);border-radius:4px;padding:20px 22px 22px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 .panel .close{position:absolute;top:10px;right:10px;width:28px;height:28px;border:1px solid var(--line);border-radius:2px;background:transparent;cursor:pointer;font-family:var(--font-mono);font-size:12px}
 .panel .close:hover{border-color:var(--copper);color:var(--copper)}
 
-/* ---------- content ---------- */
-main{padding-block:64px 40px;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px));
-  background:linear-gradient(180deg,#3b3647 0%,#221f29 140px,var(--bg) 320px)}
+/* ---------- CV section (opaque) ---------- */
+.info{position:relative;pointer-events:auto;background:linear-gradient(180deg,rgba(23,21,28,0) 0,rgba(23,21,28,.9) 120px,var(--bg) 240px);
+  padding-block:200px 40px;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px))}
 .wrap{max-width:1120px;margin:0 auto}
 .sec-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:28px}
-h2{font-family:var(--font-display);font-weight:500;font-size:clamp(22px,2.4vw,30px);margin:0;text-wrap:balance}
-.note{font-family:var(--font-mono);font-size:12px;color:var(--muted)}
+.sec-head h2{font-family:var(--font-display);font-weight:500;font-size:clamp(22px,2.4vw,30px);margin:0}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line)}
-.card{min-width:0;padding:26px 26px 24px;background:var(--bg);display:flex;flex-direction:column;gap:16px;transition:background .25s}
+.card{min-width:0;padding:26px 26px 24px;background:var(--bg);display:flex;flex-direction:column;gap:14px;transition:background .25s}
 .card:hover{background:var(--surface)}
-.card-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .unit{font-family:var(--font-mono);font-size:12px;letter-spacing:.04em;color:var(--muted)}
 .unit b{color:var(--copper);font-weight:400}
 .card h3{font-family:var(--font-display);font-weight:500;font-size:19px;margin:0}
 .card p{margin:0;color:#d9d4e0}
-.locate{border:0;background:transparent;padding:0;font-family:var(--font-mono);font-size:12px;cursor:pointer;color:var(--muted);white-space:nowrap}
-.locate:hover{color:var(--copper)}
-.chips{display:flex;flex-wrap:wrap;gap:8px;padding:0;margin:0;list-style:none}
-.chips li{font-family:var(--font-mono);font-size:12.5px;padding:4px 10px;border:1px solid rgba(210,148,102,.4);border-radius:2px}
-.contact{display:flex;flex-direction:column;gap:10px}
+.tl{list-style:none;padding:0;margin:0;display:flex;flex-direction:column}
+.tl li{display:grid;grid-template-columns:118px minmax(0,1fr);gap:2px 16px;padding:11px 0;border-top:1px solid var(--line)}
+.tl li:first-child{border-top:0;padding-top:0}
+.tl .yr{font-family:var(--font-mono);font-size:12px;color:var(--copper);padding-top:3px;font-variant-numeric:tabular-nums}
+.tl strong{font-weight:700}
+.tl .d{grid-column:2;color:#c6c0cf;font-size:14px}
+.tl a{color:inherit;text-decoration-color:rgba(210,148,102,.5);text-underline-offset:3px}
+.sk{display:flex;flex-direction:column;gap:12px}
+.sk .g{font-family:var(--font-mono);font-size:11.5px;color:var(--muted);margin-bottom:6px}
+.chips{display:flex;flex-wrap:wrap;gap:7px;padding:0;margin:0;list-style:none}
+.chips li{font-family:var(--font-mono);font-size:12px;padding:3px 9px;border:1px solid rgba(210,148,102,.4);border-radius:2px}
 .kv{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.kv .k{font-family:var(--font-mono);font-size:12px;color:var(--muted);width:60px}
+.kv .k{font-family:var(--font-mono);font-size:12px;color:var(--muted);width:64px}
 .kv .v{font-family:var(--font-mono);font-size:14px;user-select:all;overflow-wrap:anywhere}
 .copy{border:1px solid var(--line);background:transparent;border-radius:2px;padding:2px 9px;font-family:var(--font-mono);font-size:11.5px;cursor:pointer;color:var(--muted)}
 .copy:hover{color:var(--copper);border-color:var(--copper)}
-footer{max-width:1120px;margin:44px auto 0;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
-  font-family:var(--font-mono);font-size:12px;color:var(--muted)}
+footer{max-width:1120px;margin:44px auto 0;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-family:var(--font-mono);font-size:12px;color:var(--muted)}
 footer a{color:var(--muted)}
 
-@media (max-width:760px){
-  .stage{height:clamp(660px,94vh,820px)}
+@media (max-width:820px){
   .ui{padding-block:20px 18px;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
   .row2{flex-direction:column;gap:14px}
   .row2.bot{align-items:stretch}
+  .right{align-items:flex-start;text-align:left}
+  .har{display:none}
   h1{font-size:32px;margin-bottom:8px}
   .tagline{font-size:12px}
   .opts.v{flex-direction:row;align-items:center;flex-wrap:nowrap;overflow-x:auto;gap:16px;max-width:100%;scrollbar-width:none}
@@ -130,128 +179,256 @@ footer a{color:var(--muted)}
   .opts::-webkit-scrollbar{display:none}
   .opt .en{display:none}
   .br{align-items:flex-start}
-  .right{text-align:left}
+  .chap{align-items:flex-end;min-height:130vh;padding-block:55vh 6vh;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+  .cpanel{padding:18px 16px 16px;gap:13px}
   .grid{grid-template-columns:minmax(0,1fr)}
+  .tl li{grid-template-columns:minmax(0,1fr)}
+  .tl .d{grid-column:1}
   .panel{top:auto;bottom:max(16px,env(safe-area-inset-bottom,0px));transform:none;right:max(16px,env(safe-area-inset-right,0px));width:calc(100% - 32px)}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
-<style>body{margin:0} img{max-width:100%} [hidden]{display:none!important}</style>
 </head>
 <body>
-<section class="stage" id="stage" aria-label="可交互的 3D 机器狗 Unitree Go2">
-  <canvas id="gl"></canvas>
-  <div class="vignette" aria-hidden="true"></div>
-  <div class="grain" aria-hidden="true"></div>
-  <svg id="leaders" aria-hidden="true"></svg>
-  <div id="callouts"></div>
-  <div class="hint" id="hint">// 点一下我</div>
-  <div class="loader" id="loader">// LOADING GO2 · URDF + 7 MESHES<div class="bar"><i id="bar"></i></div></div>
+<canvas id="gl" aria-label="3D 场景：Unitree Go2 机器狗与机械臂"></canvas>
+<div class="vignette" aria-hidden="true"></div>
+<div class="grain" aria-hidden="true"></div>
+<svg id="leaders" aria-hidden="true"></svg>
+<div id="callouts"></div>
+<div class="hint" id="hint">// 点一下我</div>
+<div class="loader" id="loader">// LOADING GO2 · URDF + 7 MESHES<div class="bar"><i id="bar"></i></div></div>
 
-  <div class="ui">
-    <div class="row2">
-      <div class="ident">
-        <div class="lbl">// UNITREE GO2 · 12 DOF · LEGGED ROBOTICS</div>
-        <h1>Yue Cao</h1>
-        <p class="tagline">我做会走路的机器。<br>拖动旋转，点击机器狗让它动起来。</p>
-      </div>
-      <div class="right">
-        <div class="lbl">////// 视图</div>
-        <div class="opts v" role="group" aria-label="视图" id="modes">
-          <button class="opt" data-mode="exterior" aria-pressed="true"><span class="zh">外壳</span><span class="en">EXTERIOR</span></button>
-          <button class="opt" data-mode="xray" aria-pressed="false"><span class="zh">透明</span><span class="en">X-RAY</span></button>
-          <button class="opt" data-mode="wire" aria-pressed="false"><span class="zh">线框</span><span class="en">WIREFRAME</span></button>
-          <button class="opt" data-mode="kin" aria-pressed="false"><span class="zh">骨架</span><span class="en">KINEMATICS</span></button>
-          <button class="opt" data-mode="exploded" aria-pressed="false"><span class="zh">爆炸</span><span class="en">EXPLODED</span></button>
+<main id="story">
+  <!-- ======= HERO ======= -->
+  <section class="hero" data-ch="0" id="top">
+    <div class="ui">
+      <div class="row2">
+        <div class="ident">
+          <div class="lbl">// ROBOT PERCEPTION & LEARNING · KIT · KARLSRUHE</div>
+          <h1>Yue Cao</h1>
+          <p class="tagline">机器人感知与机器人学习。<br>KIT 计算机科学硕士在读，MaiRo 实验室研究助理。</p>
+          <a class="scrollcue" href="#ch1">↓ 往下滚动：感知 → 表示 → 行动 → 压缩</a>
         </div>
-      </div>
-    </div>
-
-    <div class="row2 bot">
-      <div>
-        <div class="lbl">////// 动作</div>
-        <div class="opts" role="group" aria-label="动作" id="actions">
-          <button class="opt" data-act="idle" aria-pressed="true"><span class="zh">站立</span></button>
-          <button class="opt" data-act="sit" aria-pressed="false"><span class="zh">坐下</span></button>
-          <button class="opt" data-act="shake" aria-pressed="false"><span class="zh">握手</span></button>
-          <button class="opt" data-act="jump" aria-pressed="false"><span class="zh">跳跃</span></button>
-          <button class="opt" data-act="stretch" aria-pressed="false"><span class="zh">伸懒腰</span></button>
-          <button class="opt" data-act="trot" aria-pressed="false"><span class="zh">小跑</span></button>
-        </div>
-      </div>
-      <div class="br">
-        <div class="opts" role="group" aria-label="涂装" id="finishes">
-          <button class="opt fin" data-finish="graphite" aria-pressed="true"><span class="sw" style="background:#3b3642"></span>Graphite</button>
-          <button class="opt fin" data-finish="copper" aria-pressed="false"><span class="sw" style="background:#b8734f"></span>Copper</button>
-          <button class="opt fin" data-finish="mauve" aria-pressed="false"><span class="sw" style="background:#7f7392"></span>Mauve</button>
-          <button class="opt fin" data-finish="bone" aria-pressed="false"><span class="sw" style="background:#d9d4de"></span>Bone</button>
-        </div>
-        <div class="opts" role="group" aria-label="镜头" id="cams">
-          <button class="opt" data-cam="full" aria-pressed="true"><span class="zh">全身</span></button>
-          <button class="opt" data-cam="head" aria-pressed="false"><span class="zh">头部</span></button>
-          <button class="opt" data-cam="leg" aria-pressed="false"><span class="zh">腿部</span></button>
-          <button class="opt" data-cam="orbit" aria-pressed="false"><span class="zh">环绕 360°</span></button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="panel" id="panel" hidden role="dialog" aria-labelledby="panel-title">
-    <button class="close" id="panel-close" aria-label="关闭">✕</button>
-    <div id="panel-body"></div>
-  </div>
-</section>
-
-<main>
-  <div class="wrap">
-    <div class="sec-head">
-      <div>
-        <div class="lbl">////// LINK LIST · 4 UNITS</div>
-        <h2>拆开这只狗，就是我</h2>
-      </div>
-      <span class="note">// 技能和项目持续更新中</span>
-    </div>
-
-    <div class="grid">
-      <article class="card" id="card-base">
-        <div class="card-top"><span class="unit"><b>U-01</b> · base · TRUNK + SENSORS</span><button class="locate" data-part="base">在机器狗上查看 ↗</button></div>
-        <div class="body">
-          <h3 id="t-base">关于我</h3>
-          <p style="margin-top:10px">你好，我是 Yue Cao，做机器人方向，关注机器狗和机械臂。我喜欢把仿真里训练出来的策略搬到真机上，看它第一次自己站起来。</p>
-        </div>
-      </article>
-
-      <article class="card" id="card-hip">
-        <div class="card-top"><span class="unit"><b>U-02</b> · *_hip · ACTUATORS</span><button class="locate" data-part="hip">在机器狗上查看 ↗</button></div>
-        <div class="body">
-          <h3 id="t-hip">技能</h3>
-          <ul class="chips" style="margin-top:14px">
-            <li>ROS 2</li><li>MuJoCo</li><li>Isaac Lab</li><li>强化学习 · PPO</li><li>MPC / WBC</li><li>C++ · Python</li><li>PyTorch</li><li>URDF · CAD</li>
-          </ul>
-        </div>
-      </article>
-
-      <article class="card" id="card-thigh">
-        <div class="card-top"><span class="unit"><b>U-03</b> · *_thigh · *_calf</span><button class="locate" data-part="thigh">在机器狗上查看 ↗</button></div>
-        <div class="body">
-          <h3 id="t-thigh">项目</h3>
-          <p style="margin-top:10px;color:var(--muted);font-family:var(--font-mono);font-size:13px">// 正在整理，很快上线。</p>
-        </div>
-      </article>
-
-      <article class="card" id="card-foot">
-        <div class="card-top"><span class="unit"><b>U-04</b> · *_foot · CONTACT</span><button class="locate" data-part="foot">在机器狗上查看 ↗</button></div>
-        <div class="body">
-          <h3 id="t-foot">联系</h3>
-          <div class="contact" style="margin-top:14px">
-            <div class="kv"><span class="k">EMAIL</span><span class="v">caoyuecora@gmail.com</span><button class="copy">复制</button></div>
+        <div class="right">
+          <div>
+            <div class="lbl">////// 视图</div>
+            <div class="opts v" role="group" aria-label="视图" id="modes">
+              <button class="opt" data-mode="exterior" aria-pressed="true"><span class="zh">外壳</span><span class="en">EXTERIOR</span></button>
+              <button class="opt" data-mode="xray" aria-pressed="false"><span class="zh">透明</span><span class="en">X-RAY</span></button>
+              <button class="opt" data-mode="wire" aria-pressed="false"><span class="zh">线框</span><span class="en">WIREFRAME</span></button>
+              <button class="opt" data-mode="kin" aria-pressed="false"><span class="zh">骨架</span><span class="en">KINEMATICS</span></button>
+              <button class="opt" data-mode="exploded" aria-pressed="false"><span class="zh">爆炸</span><span class="en">EXPLODED</span></button>
+            </div>
+          </div>
+          <div class="har" aria-label="人体活动识别彩蛋：根据机器狗的 IMU 信号识别当前动作">
+            <div class="lbl" style="margin:0">////// HAR · IMU</div>
+            <canvas id="har" width="320" height="80"></canvas>
+            <div class="pred">pred <b id="harp">stand · 0.97</b></div>
           </div>
         </div>
-      </article>
+      </div>
+      <div class="row2 bot">
+        <div>
+          <div class="lbl">////// 动作</div>
+          <div class="opts" role="group" aria-label="动作" id="actions">
+            <button class="opt" data-act="idle" aria-pressed="true"><span class="zh">站立</span></button>
+            <button class="opt" data-act="sit" aria-pressed="false"><span class="zh">坐下</span></button>
+            <button class="opt" data-act="shake" aria-pressed="false"><span class="zh">握手</span></button>
+            <button class="opt" data-act="jump" aria-pressed="false"><span class="zh">跳跃</span></button>
+            <button class="opt" data-act="stretch" aria-pressed="false"><span class="zh">伸懒腰</span></button>
+            <button class="opt" data-act="trot" aria-pressed="false"><span class="zh">小跑</span></button>
+          </div>
+        </div>
+        <div class="br">
+          <div class="opts" role="group" aria-label="涂装" id="finishes">
+            <button class="opt fin" data-finish="graphite" aria-pressed="true"><span class="sw" style="background:#3b3642"></span>Graphite</button>
+            <button class="opt fin" data-finish="copper" aria-pressed="false"><span class="sw" style="background:#b8734f"></span>Copper</button>
+            <button class="opt fin" data-finish="mauve" aria-pressed="false"><span class="sw" style="background:#7f7392"></span>Mauve</button>
+            <button class="opt fin" data-finish="bone" aria-pressed="false"><span class="sw" style="background:#d9d4de"></span>Bone</button>
+          </div>
+          <div class="opts" role="group" aria-label="镜头" id="cams">
+            <button class="opt" data-cam="full" aria-pressed="true"><span class="zh">全身</span></button>
+            <button class="opt" data-cam="head" aria-pressed="false"><span class="zh">头部</span></button>
+            <button class="opt" data-cam="leg" aria-pressed="false"><span class="zh">腿部</span></button>
+            <button class="opt" data-cam="orbit" aria-pressed="false"><span class="zh">环绕 360°</span></button>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
-  <footer><span>© 2026 Yue Cao</span><span>Go2 model · <a href="https://github.com/unitreerobotics/unitree_ros" target="_blank" rel="noopener">Unitree Robotics</a> (BSD-3)</span></footer>
+  </section>
+
+  <!-- ======= 01 PERCEIVE ======= -->
+  <section class="chap" data-ch="1" id="ch1">
+    <div class="cpanel">
+      <div>
+        <div class="cno">01 / PERCEIVE · 感知</div>
+        <h2>多模态场景感知</h2>
+        <div class="cmeta">Research Assistant · MaiRo Lab, KIT · 2025.10 – 至今</div>
+      </div>
+      <p>为机器人搭建从传感器到控制的实时感知链路：RGB-D 和 LiDAR 同步，2D 特征投影到 3D，LiDAR 与相机融合，并按场景域把输入路由给不同的分割模型。</p>
+      <div class="ctl">
+        <div class="lbl">////// 模态</div>
+        <div class="seg" role="group" aria-label="点云着色模态" id="lidarMode">
+          <button data-v="raw" aria-pressed="true">LiDAR</button>
+          <button data-v="depth" aria-pressed="false">深度</button>
+          <button data-v="fused" aria-pressed="false">2D→3D 融合</button>
+        </div>
+      </div>
+      <div class="ctl">
+        <div class="lbl">////// 场景域 · 域路由</div>
+        <div class="seg" role="group" aria-label="场景域" id="domain">
+          <button data-v="fog" aria-pressed="true">雾天</button>
+          <button data-v="night" aria-pressed="false">夜晚</button>
+          <button data-v="snow" aria-pressed="false">雪地</button>
+        </div>
+        <div class="bars" id="router">
+          <div class="r" data-v="fog"><span>seg·fog</span><span class="t"><i></i></span><span class="v"></span></div>
+          <div class="r" data-v="night"><span>seg·night</span><span class="t"><i></i></span><span class="v"></span></div>
+          <div class="r" data-v="snow"><span>seg·snow</span><span class="t"><i></i></span><span class="v"></span></div>
+        </div>
+      </div>
+      <div class="disc">// 交互示意：点云由模拟的 16 线扫描生成，分割与路由权重为演示用，非真实模型输出。</div>
+    </div>
+  </section>
+
+  <!-- ======= 02 REPRESENT ======= -->
+  <section class="chap" data-ch="2" id="ch2">
+    <div class="cpanel">
+      <div>
+        <div class="cno">02 / REPRESENT · 表示</div>
+        <h2>Direct Gaussian Representations for ACT</h2>
+        <div class="cmeta">Project · 2026.05 – 至今</div>
+      </div>
+      <p>用前馈 3D Gaussian Splatting 做 ACT 策略的感知前端。几何 tokenizer 把数量不定的高斯变成固定长度的 token，再和机器人状态、RGB 一起送进策略网络。</p>
+      <div class="ctl">
+        <div class="lbl">////// 场景表示</div>
+        <input type="range" id="splat" min="0" max="1" step="0.01" value="0" aria-label="网格与 3D 高斯之间切换">
+        <div class="rng"><span>网格 MESH</span><span>3D GAUSSIANS</span></div>
+      </div>
+      <div class="btns"><button class="btn" id="tokBtn">Tokenize →</button></div>
+      <div class="stats">
+        <div><b id="gCount">0</b><span>GAUSSIANS</span></div>
+        <div><b id="tCount">—</b><span>TOKENS</span></div>
+        <div><b>11</b><span>ATTRS / G</span></div>
+      </div>
+      <div class="disc">// 交互示意：高斯由物体表面采样得到，token 分配为空间分箱，非真实模型输出。</div>
+    </div>
+  </section>
+
+  <!-- ======= 03 ACT ======= -->
+  <section class="chap" data-ch="3" id="ch3">
+    <div class="cpanel">
+      <div>
+        <div class="cno">03 / ACT · 行动</div>
+        <h2>Action Chunking</h2>
+        <div class="cmeta">ACT policy · learned-query cross-attention encoder</div>
+      </div>
+      <p>策略每次预测一整段未来动作，而不是一步一步输出。<b style="color:var(--copper);font-weight:500">点击桌上的物体</b>，机械臂会把它放到铜色托盘上，再点一次放回原位。亮起来的虚影就是当前预测的 action chunk。</p>
+      <div class="stats">
+        <div><b id="chunkK">16</b><span>STEPS / CHUNK</span></div>
+        <div><b id="chunkI">—</b><span>CHUNK</span></div>
+        <div><b id="stepI">—</b><span>STEP</span></div>
+      </div>
+      <div class="status" id="actStatus">// 等待指令：点击一个物体</div>
+      <div class="btns"><button class="btn ghost" id="resetBtn">复位物体</button></div>
+      <div class="disc">// 交互示意：轨迹由脚本规划后按块执行，用来说明 action chunking，不是训练好的策略。</div>
+    </div>
+  </section>
+
+  <!-- ======= 04 COMPRESS ======= -->
+  <section class="chap" data-ch="4" id="ch4">
+    <div class="cpanel">
+      <div>
+        <div class="cno">04 / COMPRESS · 压缩</div>
+        <h2>Action & Trajectory Tokenization for VLA</h2>
+        <div class="cmeta">Project · 2025.11 – 2026.04</div>
+      </div>
+      <p>为 VLA 模型设计紧凑的动作与轨迹 tokenizer：在保持任务表现的前提下，把 token 序列缩短 90% 以上。<b style="color:var(--copper);font-weight:500">在下面画一条轨迹</b>，机械臂会把压缩后重建的轨迹画到桌上。</p>
+      <canvas class="pad" id="pad" width="760" height="428" aria-label="画轨迹的画板"></canvas>
+      <div class="ctl">
+        <div class="lbl">////// 保留系数 K</div>
+        <input type="range" id="kSlider" min="3" max="40" step="1" value="10" aria-label="保留的系数个数">
+      </div>
+      <div class="stats">
+        <div><b id="rawT">256</b><span>RAW TOKENS</span></div>
+        <div><b id="cmpT">20</b><span>TOKENS</span></div>
+        <div><b id="redT">−92%</b><span>LENGTH</span></div>
+      </div>
+      <div class="btns"><button class="btn" id="drawBtn">让机械臂画出来</button><button class="btn ghost" id="clearBtn">清空画板</button></div>
+      <div class="disc">// 交互示意：这里用 DCT 截断模拟压缩，真实项目是学习得到的多模态 tokenizer。</div>
+    </div>
+  </section>
+
+  <!-- ======= CV ======= -->
+  <section class="info" data-ch="5" id="about">
+    <div class="wrap">
+      <div class="sec-head">
+        <div>
+          <div class="lbl">////// LINK LIST · ABOUT</div>
+          <h2>拆开这只狗，就是我</h2>
+        </div>
+        <span class="lbl" style="margin:0">// Karlsruhe, Germany</span>
+      </div>
+      <div class="grid">
+        <article class="card" id="card-base">
+          <span class="unit"><b>U-01</b> · base · ABOUT</span>
+          <div class="body">
+            <h3 id="t-base">关于我</h3>
+            <p style="margin-top:10px">我是 Yue Cao，在卡尔斯鲁厄理工学院（KIT）读计算机科学硕士，同时在 MaiRo 实验室做研究助理。我的方向是机器人感知与机器人学习：多模态感知、3D 场景表示、模仿学习和视觉-语言-动作模型。</p>
+          </div>
+        </article>
+        <article class="card" id="card-edu">
+          <span class="unit"><b>U-05</b> · EDUCATION</span>
+          <div class="body">
+            <h3>教育背景</h3>
+            <ul class="tl" style="margin-top:12px">
+              <li><span class="yr">2025.10 – 至今</span><strong>M.Sc. Computer Science</strong><span class="d">Karlsruhe Institute of Technology</span></li>
+              <li><span class="yr">2020.10 – 2025.10</span><strong>B.Sc. Information Systems</strong><span class="d">Karlsruhe Institute of Technology · 毕业论文：A Comparison of Machine Learning Approaches for Human Activity Recognition（1.3）</span></li>
+            </ul>
+          </div>
+        </article>
+        <article class="card" id="card-thigh">
+          <span class="unit"><b>U-03</b> · *_thigh · PROJECTS</span>
+          <div class="body">
+            <h3 id="t-thigh">项目与经历</h3>
+            <ul class="tl" style="margin-top:12px">
+              <li><span class="yr">2025.10 – 至今</span><strong><a href="#ch1">多模态场景感知</a></strong><span class="d">MaiRo Lab 研究助理 · RGB-D/LiDAR 实时管线、2D–3D 融合、多域分割</span></li>
+              <li><span class="yr">2026.05 – 至今</span><strong><a href="#ch2">Direct Gaussian Representations for ACT</a></strong><span class="d">3DGS 作为 ACT 策略的感知前端</span></li>
+              <li><span class="yr">2025.11 – 2026.04</span><strong><a href="#ch4">Action & Trajectory Tokenization for VLA</a></strong><span class="d">token 序列缩短 90% 以上，任务表现不变</span></li>
+            </ul>
+          </div>
+        </article>
+        <article class="card" id="card-hip">
+          <span class="unit"><b>U-02</b> · *_hip · SKILLS</span>
+          <div class="body">
+            <h3 id="t-hip">技能</h3>
+            <div class="sk" style="margin-top:12px">
+              <div><div class="g">// Robot Learning & 3D Vision</div><ul class="chips"><li>Embodied AI</li><li>Imitation Learning</li><li>3D Scene Representations</li><li>2D–3D Sensor Fusion</li><li>Semantic Segmentation</li></ul></div>
+              <div><div class="g">// Frameworks & Robotics</div><ul class="chips"><li>PyTorch</li><li>ROS</li><li>MuJoCo</li><li>Isaac Lab</li><li>LIBERO</li><li>Open3D</li><li>VLMs</li></ul></div>
+              <div><div class="g">// Engineering</div><ul class="chips"><li>Python</li><li>CUDA</li><li>SLURM</li><li>Docker</li><li>W&amp;B</li></ul></div>
+            </div>
+          </div>
+        </article>
+        <article class="card" id="card-foot" style="grid-column:1/-1">
+          <span class="unit"><b>U-04</b> · *_foot · CONTACT</span>
+          <div class="body">
+            <h3 id="t-foot">联系</h3>
+            <div style="margin-top:12px;display:flex;flex-direction:column;gap:10px">
+              <div class="kv"><span class="k">EMAIL</span><span class="v">caoyuecora@gmail.com</span><button class="copy">复制</button></div>
+              <div class="kv"><span class="k">BASED</span><span class="v">Karlsruhe, Germany</span></div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+    <footer><span>© 2026 Yue Cao</span><span>Go2 model · <a href="https://github.com/unitreerobotics/unitree_ros" target="_blank" rel="noopener">Unitree Robotics</a> (BSD-3)</span></footer>
+  </section>
 </main>
+
+<div class="panel" id="panel" hidden role="dialog" aria-labelledby="panel-title">
+  <button class="close" id="panel-close" aria-label="关闭">✕</button>
+  <div id="panel-body"></div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
@@ -259,68 +436,96 @@ footer a{color:var(--muted)}
 <script>
 (function(){
 const ASSETS='assets/go2/web/';
-const S=2.0;                       // scene units per metre
+const S=2.0;                                   // scene units per metre
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-const stage=document.getElementById('stage'), canvas=document.getElementById('gl');
-const FOG=0x8e889c;
+const coarse=matchMedia('(pointer: coarse)').matches;
+const canvas=document.getElementById('gl');
+const V=new THREE.Vector3(), V2=new THREE.Vector3(), V3=new THREE.Vector3();
+const ease=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
+const damp=(dt,r)=>1-Math.exp(-dt*r);
+let clock=0,last=performance.now(),chapter=0;
 
-/* ---------- renderer / scene ---------- */
+/* ================= renderer / scene ================= */
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.outputEncoding=THREE.sRGBEncoding;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.shadowMap.enabled=true;
-renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-renderer.setClearColor(FOG);
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 const scene=new THREE.Scene();
-scene.fog=new THREE.FogExp2(FOG,.06);
+scene.fog=new THREE.FogExp2(0x8e889c,.06);
 const camera=new THREE.PerspectiveCamera(30,1,.05,140);
 const controls=new THREE.OrbitControls(camera,canvas);
-controls.enableDamping=true; controls.enablePan=false; controls.minDistance=1.2; controls.maxDistance=8;
+controls.enableDamping=true; controls.enablePan=false; controls.enableZoom=false;
 controls.maxPolarAngle=Math.PI*.49; controls.autoRotateSpeed=1.0;
+if(coarse){ controls.enabled=false; canvas.style.touchAction='pan-y'; }
 
-scene.add(new THREE.Mesh(new THREE.SphereGeometry(80,32,16),new THREE.ShaderMaterial({
+const sky=new THREE.Mesh(new THREE.SphereGeometry(80,32,16),new THREE.ShaderMaterial({
   side:THREE.BackSide,depthWrite:false,fog:false,
   uniforms:{top:{value:new THREE.Color(0x4c4760)},hor:{value:new THREE.Color(0xa59fb3)}},
   vertexShader:'varying vec3 p; void main(){ p=normalize(position); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }',
   fragmentShader:'uniform vec3 top; uniform vec3 hor; varying vec3 p; void main(){ float t=smoothstep(-.05,.6,p.y); gl_FragColor=vec4(mix(hor,top,t),1.); }'
-})));
-scene.add(new THREE.HemisphereLight(0xcfc8e2,0x6a6377,.85));
+})); scene.add(sky);
+const hemi=new THREE.HemisphereLight(0xcfc8e2,0x6a6377,.85); scene.add(hemi);
 const key=new THREE.DirectionalLight(0xfff0e4,1.35); key.position.set(2.5,4.4,2.4); key.castShadow=true;
-key.shadow.mapSize.set(2048,2048); Object.assign(key.shadow.camera,{left:-2,right:2,top:2,bottom:-2,near:.5,far:14});
+key.shadow.mapSize.set(2048,2048); Object.assign(key.shadow.camera,{left:-2.2,right:2.2,top:2.2,bottom:-2.2,near:.5,far:14});
 key.shadow.radius=5; key.shadow.bias=-.0004; key.shadow.normalBias=.01; scene.add(key);
 const rim=new THREE.DirectionalLight(0xe39a69,1.6); rim.position.set(-3.2,2.2,-2.4); scene.add(rim);
 const glowL=new THREE.PointLight(0xffb98e,.25,3); glowL.position.set(0,.7,0); scene.add(glowL);
 
-/* ---------- terrain ---------- */
+/* ================= terrain ================= */
 function hash(x,y){ const s=Math.sin(x*127.1+y*311.7)*43758.5453; return s-Math.floor(s); }
 function vn(x,y){ const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi,u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf);
   const a=hash(xi,yi),b=hash(xi+1,yi),c=hash(xi,yi+1),d=hash(xi+1,yi+1); return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v; }
 function fbm(x,y,o){ let s=0,a=.5,f=1; for(let i=0;i<o;i++){ s+=a*vn(x*f,y*f); f*=2.07; a*=.5; } return s; }
+function heightAt(x,z){
+  const r=Math.hypot(x,z),m=THREE.MathUtils.smoothstep(r,2.4,13);
+  const fine=(fbm(x*1.3,z*1.3,3)-.5)*.04;
+  if(m<=0) return Math.max(-.2,0)+fine-.01;
+  const big=(fbm(x*.07+3,z*.07-1,5)-.35)*15*m, ridge=Math.pow(Math.abs(fbm(x*.16,z*.16,4)-.5)*2,1.5)*3*m;
+  return Math.max(-.2,big+ridge)+fine-.01;
+}
+const terrainMat=new THREE.MeshStandardMaterial({color:0x8a8496,roughness:1});
 (function(){
   const g=new THREE.PlaneGeometry(110,110,240,240); g.rotateX(-Math.PI/2);
   const pos=g.attributes.position;
-  for(let i=0;i<pos.count;i++){
-    const x=pos.getX(i),z=pos.getZ(i),r=Math.hypot(x,z),m=THREE.MathUtils.smoothstep(r,2.4,13);
-    const big=(fbm(x*.07+3,z*.07-1,5)-.35)*15*m, ridge=Math.pow(Math.abs(fbm(x*.16,z*.16,4)-.5)*2,1.5)*3*m, fine=(fbm(x*1.3,z*1.3,3)-.5)*.04;
-    pos.setY(i,Math.max(-.2,big+ridge)+fine-.01);
-  }
+  for(let i=0;i<pos.count;i++) pos.setY(i,heightAt(pos.getX(i),pos.getZ(i)));
   g.computeVertexNormals();
-  const t=new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:0x8a8496,roughness:1})); t.receiveShadow=true; scene.add(t);
+  const t=new THREE.Mesh(g,terrainMat); t.receiveShadow=true; scene.add(t);
+})();
+const glowDisc=(function(){
   const c=document.createElement('canvas'); c.width=c.height=256; const x=c.getContext('2d');
   const gr=x.createRadialGradient(128,128,0,128,128,128); gr.addColorStop(0,'rgba(255,214,186,.14)'); gr.addColorStop(.55,'rgba(230,160,120,.04)'); gr.addColorStop(1,'rgba(230,160,120,0)');
   x.fillStyle=gr; x.fillRect(0,0,256,256);
   const d=new THREE.Mesh(new THREE.CircleGeometry(1.4,64),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}));
-  d.rotation.x=-Math.PI/2; d.position.y=.035; scene.add(d);
+  d.rotation.x=-Math.PI/2; d.position.y=.035; scene.add(d); return d;
 })();
 const DUST=700,dpos=new Float32Array(DUST*3),dsp=[];
 for(let i=0;i<DUST;i++){ dpos[i*3]=(Math.random()-.5)*14; dpos[i*3+1]=Math.random()*5; dpos[i*3+2]=(Math.random()-.5)*14; dsp.push(.05+Math.random()*.12); }
 const dgeo=new THREE.BufferGeometry(); dgeo.setAttribute('position',new THREE.BufferAttribute(dpos,3));
-scene.add(new THREE.Points(dgeo,new THREE.PointsMaterial({color:0xf3eef8,size:.022,transparent:true,opacity:.7,depthWrite:false})));
+const dustMat=new THREE.PointsMaterial({color:0xf3eef8,size:.022,transparent:true,opacity:.7,depthWrite:false});
+scene.add(new THREE.Points(dgeo,dustMat));
 
-/* ---------- robot (built from the URDF tree in go2.json) ---------- */
+/* ================= scene domains (chapter 01) ================= */
+const DOMAINS={
+  fog:  {fog:0x8e889c,dens:.06, top:0x4c4760,hor:0xa59fb3, hs:0xcfc8e2,hg:0x6a6377,hi:.85, ki:1.35, ri:1.6, ter:0x8a8496, dust:.7},
+  night:{fog:0x1f1d29,dens:.07, top:0x0b0a12,hor:0x2b2738, hs:0x5a5578,hg:0x1c1a24,hi:.45, ki:.35, ri:1.2, ter:0x4a4656, dust:.35},
+  snow: {fog:0xc4c1cd,dens:.065,top:0x8f8ca0,hor:0xd9d6e0, hs:0xf1eef6,hg:0x9a96a6,hi:1.0, ki:1.5, ri:1.0, ter:0xc9c6d2, dust:1.0},
+};
+let domain='fog';
+const dc={fog:new THREE.Color(),top:new THREE.Color(),hor:new THREE.Color(),hs:new THREE.Color(),hg:new THREE.Color(),ter:new THREE.Color()};
+function updateDomain(dt){
+  const D=DOMAINS[domain],k=damp(dt,3);
+  scene.fog.color.lerp(dc.fog.setHex(D.fog),k); renderer.setClearColor(scene.fog.color);
+  scene.fog.density+=(D.dens-scene.fog.density)*k;
+  sky.material.uniforms.top.value.lerp(dc.top.setHex(D.top),k); sky.material.uniforms.hor.value.lerp(dc.hor.setHex(D.hor),k);
+  hemi.color.lerp(dc.hs.setHex(D.hs),k); hemi.groundColor.lerp(dc.hg.setHex(D.hg),k); hemi.intensity+=(D.hi-hemi.intensity)*k;
+  key.intensity+=(D.ki-key.intensity)*k; rim.intensity+=(D.ri-rim.intensity)*k;
+  terrainMat.color.lerp(dc.ter.setHex(D.ter),k); dustMat.opacity+=(D.dust-dustMat.opacity)*k;
+}
+
+/* ================= robot from URDF tree ================= */
 const FIN={graphite:[0x3b3642,.38,.35],copper:[0xb8734f,.3,.85],mauve:[0x7f7392,.42,.2],bone:[0xd9d4de,.5,.05]};
-function roleOf(name){ if(/logo/i.test(name)) return 'accent'; if(/足端/.test(name)) return 'rubber'; if(/黑色/.test(name)) return 'dark'; return 'shell'; }
+function roleOf(n){ if(/logo/i.test(n)) return 'accent'; if(/足端/.test(n)) return 'rubber'; if(/黑色/.test(n)) return 'dark'; return 'shell'; }
 const BASEMAT={
   shell:()=>new THREE.MeshStandardMaterial({color:FIN.graphite[0],roughness:FIN.graphite[1],metalness:FIN.graphite[2]}),
   dark:()=>new THREE.MeshStandardMaterial({color:0x17151b,roughness:.4,metalness:.55}),
@@ -328,8 +533,8 @@ const BASEMAT={
   accent:()=>new THREE.MeshStandardMaterial({color:0xc27f55,roughness:.28,metalness:.95,emissive:0x5a2c12,emissiveIntensity:.35}),
 };
 const robotRoot=new THREE.Group(); robotRoot.scale.setScalar(S); robotRoot.rotation.x=-Math.PI/2; scene.add(robotRoot);
-const allMats=[], meshes=[], edgeLines=[], skel=[];
-let robot=null, links={}, joints={}, linkOfMesh=new Map();
+const allMats=[],meshes=[],edgeLines=[],skel=[],armMats=[];
+let robot=null; const links={},joints={},linkOfMesh=new Map();
 const skelMats={
   axis:new THREE.MeshBasicMaterial({color:0xe0905c,toneMapped:false,fog:false}),
   node:new THREE.MeshBasicMaterial({color:0x2a2433,toneMapped:false,fog:false}),
@@ -337,10 +542,9 @@ const skelMats={
   ax:new THREE.LineBasicMaterial({vertexColors:true,fog:false}),
 };
 const edgeMat=new THREE.LineBasicMaterial({color:0x3b3445,transparent:true,opacity:.4,fog:false});
-function rpyQuat(r){ return new THREE.Quaternion().setFromEuler(new THREE.Euler(r[0],r[1],r[2],'ZYX')); }
-
+const rpyQuat=r=>new THREE.Quaternion().setFromEuler(new THREE.Euler(r[0],r[1],r[2],'ZYX'));
 const manager=new THREE.LoadingManager();
-const bar=document.getElementById('bar'), loaderEl=document.getElementById('loader');
+const bar=document.getElementById('bar'),loaderEl=document.getElementById('loader');
 manager.onProgress=(u,l,t)=>{ bar.style.width=(l/t*100)+'%'; };
 const gltfLoader=new THREE.GLTFLoader(manager);
 
@@ -349,157 +553,330 @@ async function loadRobot(){
   const names=[...new Set(Object.values(desc.links).flat().map(v=>v.mesh))];
   const geos={};
   await Promise.all(names.map(n=>new Promise((res,rej)=>gltfLoader.load(ASSETS+n+'.glb',g=>{ geos[n]=g.scene; res(); },undefined,rej))));
-  // link groups
   const mk=name=>{ const g=new THREE.Group(); g.name=name; links[name]=g;
     (desc.links[name]||[]).forEach(v=>{
       const vis=new THREE.Group(); vis.position.set(...v.xyz); vis.quaternion.copy(rpyQuat(v.rpy)); g.add(vis);
       const src=geos[v.mesh]; src.updateMatrixWorld(true);
       src.traverse(o=>{ if(!o.isMesh) return;
-        const mats=(Array.isArray(o.material)?o.material:[o.material]);
-        mats.forEach(sm=>{
-          const role=roleOf(sm.name||''); const m=BASEMAT[role](); m.userData.role=role; allMats.push(m);
-          const mesh=new THREE.Mesh(o.geometry,m); mesh.matrixAutoUpdate=false; mesh.matrix.copy(o.matrixWorld);
-          mesh.castShadow=true; mesh.receiveShadow=true; vis.add(mesh); meshes.push(mesh); linkOfMesh.set(mesh,name);
-        });
+        const role=roleOf(o.material.name||''), m=BASEMAT[role](); m.userData.role=role; allMats.push(m);
+        const mesh=new THREE.Mesh(o.geometry,m); mesh.matrixAutoUpdate=false; mesh.matrix.copy(o.matrixWorld);
+        mesh.castShadow=true; mesh.receiveShadow=true; vis.add(mesh); meshes.push(mesh); linkOfMesh.set(mesh,name);
       });
-    });
-    return g; };
-  Object.keys(Object.fromEntries(desc.joints.flatMap(j=>[[j.parent,1],[j.child,1]])) ).forEach(n=>{ if(!links[n]) mk(n); });
-  if(!links.base) mk('base');
+    }); };
+  desc.joints.forEach(j=>{ if(!links[j.parent]) mk(j.parent); if(!links[j.child]) mk(j.child); });
   robotRoot.add(links.base);
   desc.joints.forEach(j=>{
-    const jg=new THREE.Group(); jg.position.set(...j.xyz); jg.quaternion.copy(rpyQuat(j.rpy));
-    jg.userData.origin=new THREE.Vector3(...j.xyz);
+    const jg=new THREE.Group(); jg.position.set(...j.xyz); jg.quaternion.copy(rpyQuat(j.rpy)); jg.userData.origin=new THREE.Vector3(...j.xyz);
     const rot=new THREE.Group(); jg.add(rot); rot.add(links[j.child]); links[j.parent].add(jg);
     joints[j.name]={...j,g:jg,rot,axis:new THREE.Vector3(...j.axis),q:0};
-    // skeleton: bone from parent frame origin to this joint, plus axis marker for revolute joints
     if(/hip_joint|thigh_joint|calf_joint|foot_joint/.test(j.name)){
-      const bone=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3(...j.xyz)]),skelMats.line);
-      links[j.parent].add(bone); skel.push(bone);
+      const bone=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3(...j.xyz)]),skelMats.line); links[j.parent].add(bone); skel.push(bone);
       const node=new THREE.Mesh(new THREE.SphereGeometry(j.type==='fixed'?.016:.011,16,10),skelMats.node); jg.add(node); skel.push(node);
     }
     if(j.type==='revolute'){
       const cyl=new THREE.Mesh(new THREE.CylinderGeometry(.007,.007,.075,12),skelMats.axis);
       cyl.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),new THREE.Vector3(...j.axis)); jg.add(cyl); skel.push(cyl);
-      const L=.045, ag=new THREE.BufferGeometry().setFromPoints([0,0,0, L,0,0, 0,0,0, 0,L,0, 0,0,0, 0,0,L].reduce((a,_,i,s)=>i%3?a:[...a,new THREE.Vector3(s[i],s[i+1],s[i+2])],[]));
-      ag.setAttribute('color',new THREE.Float32BufferAttribute([.82,.45,.25,.82,.45,.25, .16,.13,.2,.16,.13,.2, .45,.38,.58,.45,.38,.58],3));
+      const L=.045,ag=new THREE.BufferGeometry().setFromPoints([[0,0,0],[L,0,0],[0,0,0],[0,L,0],[0,0,0],[0,0,L]].map(a=>new THREE.Vector3(...a)));
+      ag.setAttribute('color',new THREE.Float32BufferAttribute([.82,.45,.25,.82,.45,.25,.16,.13,.2,.16,.13,.2,.45,.38,.58,.45,.38,.58],3));
       const tri=new THREE.LineSegments(ag,skelMats.ax); rot.add(tri); skel.push(tri);
     }
   });
-  // trunk outline for the kinematics view
   const box=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(.3762,.0935,.114)),skelMats.line); links.base.add(box); skel.push(box);
-  // x-ray edges (computed once per unique geometry)
-  const edgeCache=new Map();
-  meshes.forEach(m=>{ let eg=edgeCache.get(m.geometry); if(!eg){ eg=new THREE.EdgesGeometry(m.geometry,38); edgeCache.set(m.geometry,eg); }
+  const ec=new Map();
+  meshes.forEach(m=>{ let eg=ec.get(m.geometry); if(!eg){ eg=new THREE.EdgesGeometry(m.geometry,38); ec.set(m.geometry,eg); }
     const e=new THREE.LineSegments(eg,edgeMat); e.matrixAutoUpdate=false; e.matrix.copy(m.matrix); m.parent.add(e); edgeLines.push(e); });
   robot=desc;
+  buildArm();
 }
 
-/* ---------- view modes ---------- */
-let mode='exterior', explodeTarget=0, explodeT=0, camMode='full', tween=null;
+/* ================= arm on Go2's back (procedural, metres, base-link frame) ================= */
+const L1=.34,L2=.32,SH=.07,WR=.115;
+const arm={};
+function armMat(role){ const m=role==='shell'?BASEMAT.shell():(role==='cu'?new THREE.MeshStandardMaterial({color:0xc27f55,roughness:.3,metalness:.95}):BASEMAT.dark()); m.userData.role=role==='shell'?'shell':'armfix'; if(role==='shell') allMats.push(m); armMats.push(m); return m; }
+function buildArm(){
+  const shell=armMat('shell'),dark=armMat('dark'),cu=armMat('cu');
+  const add=(p,g,m,pos,rot)=>{ const o=new THREE.Mesh(g,m); if(pos) o.position.set(...pos); if(rot) o.rotation.set(...rot); o.castShadow=true; o.receiveShadow=true; p.add(o); return o; };
+  const base=new THREE.Group(); base.position.set(-.04,0,.058); links.base.add(base); arm.base=base;
+  add(base,new THREE.CylinderGeometry(.045,.05,.02,32),dark,[0,0,.01],[Math.PI/2,0,0]);
+  const yaw=new THREE.Group(); base.add(yaw); arm.yaw=yaw;
+  add(yaw,new THREE.CylinderGeometry(.036,.04,SH,28),shell,[0,0,SH/2],[Math.PI/2,0,0]);
+  const sh=new THREE.Group(); sh.position.set(0,0,SH); yaw.add(sh); arm.sh=sh;
+  add(sh,new THREE.CylinderGeometry(.038,.038,.08,28),dark,[0,0,0]);
+  add(sh,new THREE.CylinderGeometry(.018,.018,.084,20),cu,[0,0,0]);
+  add(sh,new THREE.CapsuleGeometry(.024,L1-.06,6,14),shell,[L1/2,0,0],[0,0,Math.PI/2]);
+  const el=new THREE.Group(); el.position.set(L1,0,0); sh.add(el); arm.el=el;
+  add(el,new THREE.CylinderGeometry(.03,.03,.066,24),dark,[0,0,0]);
+  add(el,new THREE.CylinderGeometry(.014,.014,.07,16),cu,[0,0,0]);
+  add(el,new THREE.CapsuleGeometry(.019,L2-.05,6,12),shell,[L2/2,0,0],[0,0,Math.PI/2]);
+  const wr=new THREE.Group(); wr.position.set(L2,0,0); el.add(wr); arm.wr=wr;
+  add(wr,new THREE.CylinderGeometry(.022,.022,.05,20),dark,[0,0,0]);
+  add(wr,new THREE.BoxGeometry(.05,.05,.03),dark,[.045,0,0]);
+  add(wr,new THREE.BoxGeometry(.008,.05,.03),cu,[.072,0,0]);
+  arm.f1=add(wr,new THREE.BoxGeometry(.045,.008,.02),dark,[.095,.02,0]);
+  arm.f2=add(wr,new THREE.BoxGeometry(.045,.008,.02),dark,[.095,-.02,0]);
+  const tip=new THREE.Group(); tip.position.set(WR,0,0); wr.add(tip); arm.tip=tip;
+  arm.q=[0,2.85,-2.75,-1.67]; arm.grip=.02;
+}
+const FOLD=[0,2.85,-2.75,-1.67];
+function applyArm(q,grip){
+  arm.yaw.rotation.z=q[0]; arm.sh.rotation.y=-q[1]; arm.el.rotation.y=-q[2]; arm.wr.rotation.y=-q[3];
+  arm.f1.position.y=grip; arm.f2.position.y=-grip;
+}
+function ik(world){
+  links.base.updateMatrixWorld(true);
+  const p=arm.base.worldToLocal(V.copy(world));
+  const yaw=Math.atan2(p.y,p.x), r=Math.hypot(p.x,p.y), h=p.z-SH+WR;
+  let D=Math.hypot(r,h); D=Math.min(D,L1+L2-1e-4); D=Math.max(D,Math.abs(L1-L2)+1e-4);
+  const a=Math.atan2(h,r), b=Math.acos(THREE.MathUtils.clamp((L1*L1+D*D-L2*L2)/(2*L1*D),-1,1));
+  const phi1=a+b, c=Math.acos(THREE.MathUtils.clamp((L1*L1+L2*L2-D*D)/(2*L1*L2),-1,1)), phi2=phi1-(Math.PI-c);
+  return [yaw,phi1,phi2-phi1,-Math.PI/2-phi2];
+}
+
+/* ================= table, objects, pad ================= */
+const TABLE_Y=.475;
+const table=new THREE.Group(); table.position.set(.93,0,0); scene.add(table); table.visible=false;
+(function(){
+  const top=new THREE.Mesh(new THREE.BoxGeometry(.66,.03,.86),new THREE.MeshStandardMaterial({color:0x2c2832,roughness:.7,metalness:.2}));
+  top.position.y=TABLE_Y-.015; top.castShadow=top.receiveShadow=true; table.add(top);
+  const strip=new THREE.Mesh(new THREE.BoxGeometry(.662,.006,.862),new THREE.MeshStandardMaterial({color:0xc27f55,roughness:.3,metalness:.9}));
+  strip.position.y=TABLE_Y-.03; table.add(strip);
+  const lm=new THREE.MeshStandardMaterial({color:0x1c1a20,roughness:.5,metalness:.6});
+  [[-.3,-.4],[.3,-.4],[-.3,.4],[.3,.4]].forEach(([x,z])=>{ const l=new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,TABLE_Y-.03,10),lm); l.position.set(x,(TABLE_Y-.03)/2,z); l.castShadow=true; table.add(l); });
+  const pad=new THREE.Mesh(new THREE.BoxGeometry(.32,.004,.13),new THREE.MeshStandardMaterial({color:0xb8734f,roughness:.35,metalness:.85,emissive:0x40200c,emissiveIntensity:.4}));
+  pad.position.set(.05,TABLE_Y+.002,-.29); table.add(pad);
+})();
+const objMat=c=>new THREE.MeshStandardMaterial({color:c,roughness:.45,metalness:.15,transparent:true});
+const OBJS=[
+  {name:'cube',geo:new THREE.BoxGeometry(.08,.08,.08),h:.04,color:0xd29466,home:[.84,.1]},
+  {name:'cylinder',geo:new THREE.CylinderGeometry(.038,.038,.1,28),h:.05,color:0x8e84a0,home:[1.0,.22]},
+  {name:'sphere',geo:new THREE.SphereGeometry(.045,28,18),h:.045,color:0xd9d4de,home:[1.1,.04]},
+].map(o=>{ const m=new THREE.Mesh(o.geo,objMat(o.color)); m.castShadow=m.receiveShadow=true; m.position.set(o.home[0],TABLE_Y+o.h,o.home[1]); scene.add(m); m.visible=false; return Object.assign(o,{mesh:m,slot:-1}); });
+const SLOTS=[[.88,-.29],[.98,-.29],[1.08,-.29]];
+
+/* ================= 3D gaussians + tokens (chapter 02) ================= */
+const G=[];   // {owner:mesh|null, lp:Vector3, ln:Vector3, s:[a,b,c], col}
+function sampleObj(o,n){
+  for(let i=0;i<n;i++){
+    let p=new THREE.Vector3(),nn=new THREE.Vector3();
+    if(o.name==='cube'){ const f=Math.floor(Math.random()*6),ax=f>>1,sg=f&1?1:-1,u=(Math.random()-.5)*.08,v=(Math.random()-.5)*.08;
+      const c=[u,v]; const a=[0,0,0]; a[ax]=sg*.04; const oth=[0,1,2].filter(x=>x!==ax); a[oth[0]]=c[0]; a[oth[1]]=c[1]; p.set(...a); nn.set(0,0,0).setComponent(ax,sg); }
+    else if(o.name==='cylinder'){ if(Math.random()<.25){ const r=.038*Math.sqrt(Math.random()),t=Math.random()*6.283,sg=Math.random()<.5?-1:1; p.set(r*Math.cos(t),sg*.05,r*Math.sin(t)); nn.set(0,sg,0); }
+      else { const t=Math.random()*6.283; p.set(.038*Math.cos(t),(Math.random()-.5)*.1,.038*Math.sin(t)); nn.set(Math.cos(t),0,Math.sin(t)); } }
+    else { nn.set(Math.random()-.5,Math.random()-.5,Math.random()-.5).normalize(); p.copy(nn).multiplyScalar(.045); }
+    const c=new THREE.Color(o.color).offsetHSL((Math.random()-.5)*.03,(Math.random()-.5)*.1,(Math.random()-.5)*.12);
+    G.push({owner:o.mesh,lp:p,ln:nn,s:[.008+Math.random()*.012,.008+Math.random()*.012,.003],col:c});
+  }
+}
+OBJS.forEach((o,i)=>sampleObj(o,[230,210,190][i]));
+for(let i=0;i<520;i++){ const p=new THREE.Vector3(.93+(Math.random()-.5)*.6,TABLE_Y+.002,(Math.random()-.5)*.8);
+  const c=new THREE.Color(0x2c2832).offsetHSL(0,0,(Math.random()-.3)*.08); if(Math.random()<.04) c.setHex(0xc27f55);
+  G.push({owner:null,lp:p,ln:new THREE.Vector3(0,1,0),s:[.014+Math.random()*.02,.014+Math.random()*.02,.002],col:c}); }
+const gMesh=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,1),new THREE.MeshStandardMaterial({roughness:.5,metalness:.1,transparent:true,opacity:.9}),G.length);
+G.forEach((g,i)=>gMesh.setColorAt(i,g.col)); gMesh.visible=false; scene.add(gMesh);
+const NTOK=64, tokGroup=new THREE.Group(); scene.add(tokGroup); tokGroup.visible=false;
+const tokMat=new THREE.MeshStandardMaterial({color:0x2c2832,roughness:.4,metalness:.6,emissive:0xd29466,emissiveIntensity:0});
+const tokMesh=new THREE.InstancedMesh(new THREE.BoxGeometry(.042,.042,.012),tokMat,NTOK); tokGroup.add(tokMesh);
+const tokCenters=[];
+for(let i=0;i<NTOK;i++){ const x=(i%8-3.5)*.056,y=(3.5-Math.floor(i/8))*.056; const m=new THREE.Matrix4().makeTranslation(x,y,0); tokMesh.setMatrixAt(i,m); tokCenters.push(new THREE.Vector3(x,y,0)); }
+let splat=0,splatT=0,tok=0,tokT=0;
+const gm=new THREE.Matrix4(),gq=new THREE.Quaternion(),gs=new THREE.Vector3(),gp=new THREE.Vector3(),gZ=new THREE.Vector3(0,0,1),tokW=[];
+let gBins=null;
+function assignBins(){ // spatial binning: equal-count bins along a sweep through the scene
+  const idx=G.map((g,i)=>{ const w=g.owner?V.copy(g.lp).applyMatrix4(g.owner.matrixWorld):V.copy(g.lp); return [i,w.x*3+w.z]; }).sort((a,b)=>a[1]-b[1]);
+  gBins=new Array(G.length); idx.forEach(([i],k)=>gBins[i]=Math.floor(k*NTOK/G.length));
+}
+function updateGaussians(dt){
+  splat+=(splatT-splat)*damp(dt,6); tok+=(tokT-tok)*damp(dt,3);
+  const on=splat>.01; gMesh.visible=on; tokGroup.visible=tok>.01;
+  OBJS.forEach(o=>{ o.mesh.material.opacity=1-splat; o.mesh.material.depthWrite=splat<.5; o.mesh.castShadow=splat<.5; });
+  if(!on) return;
+  if(tok>.01){ tokGroup.position.set(.93,1.12,0); tokGroup.lookAt(camera.position); tokGroup.updateMatrixWorld(true); if(!gBins) assignBins();
+    for(let i=0;i<NTOK;i++) tokW[i]=(tokW[i]||new THREE.Vector3()).copy(tokCenters[i]).applyMatrix4(tokGroup.matrixWorld); }
+  const te=ease(Math.min(1,tok));
+  for(let i=0;i<G.length;i++){ const g=G[i];
+    if(g.owner){ gp.copy(g.lp).applyMatrix4(g.owner.matrixWorld); } else gp.copy(g.lp);
+    gq.setFromUnitVectors(gZ,g.ln);
+    const k=splat*(1-.75*te); gs.set(g.s[0]*k,g.s[1]*k,g.s[2]*k+.0005);
+    if(te>0){ const d=(i*.6180339)%1, local=THREE.MathUtils.clamp((te-d*.35)/.65,0,1); gp.lerp(tokW[gBins[i]],ease(local)); }
+    gm.compose(gp,gq,gs); gMesh.setMatrixAt(i,gm);
+  }
+  gMesh.instanceMatrix.needsUpdate=true;
+  tokMat.emissiveIntensity=te*1.1;
+}
+
+/* ================= LiDAR (chapter 01) ================= */
+let lidar=null, lidarMode='raw';
+const lidarMat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,
+  uniforms:{uSweep:{value:0},uSize:{value:2.2*Math.min(devicePixelRatio,2)},uFade:{value:0}},
+  vertexShader:`attribute vec3 color; attribute float az; uniform float uSweep; uniform float uSize; uniform float uFade; varying vec3 vC; varying float vA;
+    void main(){ float d=mod(uSweep-az,6.2831853); float b=.45+.55*exp(-d*1.4); vC=color*b; vec4 mv=modelViewMatrix*vec4(position,1.); vA=uFade*clamp(1.-(-mv.z-6.)/10.,0.,1.);
+      gl_PointSize=uSize; gl_Position=projectionMatrix*mv; }`,
+  fragmentShader:`varying vec3 vC; varying float vA; void main(){ vec2 c=gl_PointCoord-.5; if(dot(c,c)>.25) discard; gl_FragColor=vec4(vC,vA); }`});
+const frustum=new THREE.LineSegments(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0xd29466,transparent:true,opacity:0,fog:false})); scene.add(frustum);
+let lidarFade=0;
+function buildLidar(){
+  links.base.updateMatrixWorld(true);
+  const O=links.base.localToWorld(new THREE.Vector3(.29,0,-.03)), fwd=links.base.localToWorld(new THREE.Vector3(1.29,0,-.03)).sub(O).setY(0).normalize();
+  const pts=[],ranges=[],azs=[],cls=[],fov=[];
+  const RINGS=18,AZ=600, HF=.6, VF=.42;
+  for(let r=0;r<RINGS;r++){ const el=-.52+r*(.62/(RINGS-1));
+    for(let a=0;a<AZ;a++){ const az=a/AZ*Math.PI*2+(r%2)*.002;
+      const dir=new THREE.Vector3(Math.cos(el)*Math.cos(az),Math.sin(el),Math.cos(el)*Math.sin(az));
+      let t=.35,hit=false,prev=.35;
+      while(t<10){ const x=O.x+dir.x*t,y=O.y+dir.y*t,z=O.z+dir.z*t; if(y<=heightAt(x,z)){ hit=true; break; } prev=t; t+=.03+t*.025; }
+      if(!hit) continue;
+      let lo=prev,hi=t; for(let k=0;k<5;k++){ const m=(lo+hi)/2; const x=O.x+dir.x*m,y=O.y+dir.y*m,z=O.z+dir.z*m; if(y<=heightAt(x,z)) hi=m; else lo=m; }
+      const p=V.copy(dir).multiplyScalar(hi).add(O);
+      const e=.06, gx=(heightAt(p.x+e,p.z)-heightAt(p.x-e,p.z))/(2*e), gz=(heightAt(p.x,p.z+e)-heightAt(p.x,p.z-e))/(2*e), sl=Math.hypot(gx,gz);
+      pts.push(p.x,p.y+.004,p.z); ranges.push(hi); azs.push(az);
+      cls.push(sl<.12?0:(sl<.55?1:2));
+      const hd=Math.atan2(dir.z,dir.x)-Math.atan2(fwd.z,fwd.x), hda=Math.atan2(Math.sin(hd),Math.cos(hd));
+      fov.push(Math.abs(hda)<HF/2*1.6&&Math.abs(el+.12)<VF?1:0);
+    }
+  }
+  const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));
+  g.setAttribute('color',new THREE.Float32BufferAttribute(new Array(pts.length).fill(1),3)); g.setAttribute('az',new THREE.Float32BufferAttribute(azs,1));
+  lidar=new THREE.Points(g,lidarMat); lidar.userData={ranges,cls,fov}; lidar.frustumCulled=false; scene.add(lidar);
+  // camera frustum (front camera)
+  const F=2.6,w=Math.tan(HF*.8)*F,h=Math.tan(VF*.55)*F, up=new THREE.Vector3(0,1,0), side=new THREE.Vector3().crossVectors(fwd,up).normalize();
+  const c=O.clone().add(fwd.clone().multiplyScalar(F)).add(up.clone().multiplyScalar(-.12*F));
+  const corners=[[1,1],[1,-1],[-1,-1],[-1,1]].map(([a,b])=>c.clone().add(side.clone().multiplyScalar(a*w)).add(up.clone().multiplyScalar(b*h)));
+  const fp=[]; corners.forEach((k,i)=>{ fp.push(O.x,O.y,O.z,k.x,k.y,k.z); const n=corners[(i+1)%4]; fp.push(k.x,k.y,k.z,n.x,n.y,n.z); });
+  frustum.geometry.setAttribute('position',new THREE.Float32BufferAttribute(fp,3));
+  colorLidar();
+}
+const CLS=[new THREE.Color(0xe9e2d6),new THREE.Color(0x9a8bc0),new THREE.Color(0xe0905c)];
+const DEPTH=[new THREE.Color(0xf0b48a),new THREE.Color(0x9d86c6),new THREE.Color(0x3a3150)];
+function colorLidar(){
+  if(!lidar) return; const c=lidar.geometry.attributes.color, {ranges,cls,fov}=lidar.userData, t=new THREE.Color();
+  const night=domain==='night';
+  for(let i=0;i<ranges.length;i++){
+    if(lidarMode==='raw'){ t.setHex(night?0xd8d0f0:0xf6f2fb); }
+    else if(lidarMode==='depth'){ const u=Math.min(1,ranges[i]/8); if(u<.5) t.copy(DEPTH[0]).lerp(DEPTH[1],u*2); else t.copy(DEPTH[1]).lerp(DEPTH[2],(u-.5)*2); }
+    else { if(fov[i]) t.copy(CLS[cls[i]]); else t.setHex(0x6b6578); }
+    c.setXYZ(i,t.r,t.g,t.b);
+  }
+  c.needsUpdate=true;
+}
+const ROUTER={fog:[.91,.05,.04],night:[.07,.88,.05],snow:[.06,.03,.91]};
+function setRouter(){ const w=ROUTER[domain]; document.querySelectorAll('#router .r').forEach((r,i)=>{ r.classList.toggle('on',r.dataset.v===domain); r.querySelector('i').style.width=(w[i]*100)+'%'; r.querySelector('.v').textContent=w[i].toFixed(2); }); }
+
+/* ================= view modes (hero) ================= */
+let mode='exterior',explodeTarget=0,explodeT=0,camMode='full',tween=null;
 function setMode(m,silent){
-  mode=m; press('#modes','mode',m);
+  mode=m; press('#modes','opt','mode',m);
   if(robot){
-    allMats.forEach(mat=>{
-      const x=m==='xray', w=m==='wire';
+    allMats.forEach(mat=>{ if(armMats.includes(mat)) return;
+      const x=m==='xray',w=m==='wire';
       mat.wireframe=w; mat.transparent=x||w; mat.opacity=x?.18:(w?.3:1); mat.depthWrite=!(x||w);
-      if(w){ mat.userData.keep=mat.userData.keep||mat.color.getHex(); mat.color.setHex(0x2f2a38); mat.emissive.setHex(0x000000); }
-      else if(mat.userData.keep!==undefined){ mat.color.setHex(mat.userData.keep); mat.userData.keep=undefined; mat.emissive.setHex(mat.userData.role==='accent'?0x5a2c12:0x000000); }
-      mat.needsUpdate=true;
-    });
+      if(w){ if(mat.userData.keep===undefined) mat.userData.keep=mat.color.getHex(); mat.color.setHex(0x2f2a38); mat.emissive.setHex(0); }
+      else if(mat.userData.keep!==undefined){ mat.color.setHex(mat.userData.keep); mat.userData.keep=undefined; mat.emissive.setHex(mat.userData.role==='accent'?0x5a2c12:0); }
+      mat.needsUpdate=true; });
     meshes.forEach(o=>{ o.visible=m!=='kin'; o.castShadow=(m==='exterior'||m==='exploded'); });
     edgeLines.forEach(e=>e.visible=m==='xray');
     skel.forEach(s=>s.visible=(m==='xray'||m==='kin'));
   }
   explodeTarget=m==='exploded'?1:0;
-  controls.autoRotate=(m==='exploded'||camMode==='orbit')&&!reduce;
+  controls.autoRotate=chapter===0&&(m==='exploded'||camMode==='orbit')&&!reduce;
   if(m!=='exploded') closePanel();
   if(!silent) hideHint();
 }
 
-/* ---------- poses (joint angles in rad: [hip, thigh, calf]) ---------- */
-const LEGS=['FL','FR','RL','RR'], SIDE={FL:1,FR:-1,RL:1,RR:-1};
-const STAND=[0,.8,-1.5];
+/* ================= dog poses ================= */
+const LEGS=['FL','FR','RL','RR'],SIDE={FL:1,FR:-1,RL:1,RR:-1},STAND=[0,.8,-1.5];
 function base(){ return {z:0,roll:0,pitch:0,yaw:0,L:{FL:[...STAND],FR:[...STAND],RL:[...STAND],RR:[...STAND]}}; }
 const DUR={shake:2.8,jump:1.3,stretch:2.8,trot:4.5,sit:Infinity,idle:Infinity};
-let action='idle', aStart=0;
+let action='idle',aStart=0;
 function poseFor(a,t,now){
   const p=base();
-  if(a==='idle'){ p.z=.004*Math.sin(now*2.2); }
+  if(a==='idle') p.z=.004*Math.sin(now*2.2);
   if(a==='sit'){ p.pitch=-.45; p.L.FL=[0,.45,-1.27]; p.L.FR=[0,.45,-1.27]; p.L.RL=[0,1.45,-2.6]; p.L.RR=[0,1.45,-2.6]; }
-  if(a==='shake'){ p.pitch=-.12; p.roll=-.06;
-    p.L.FR=[-.15,-.45,-1.25+.32*Math.sin(t*9)]; p.L.FL=[.05,.75,-1.45]; p.L.RL=[0,1.0,-1.9]; p.L.RR=[0,1.0,-1.9]; }
+  if(a==='shake'){ p.pitch=-.12; p.roll=.06; p.L.FL=[.15,-.45,-1.25+.32*Math.sin(t*9)]; p.L.FR=[-.05,.75,-1.45]; p.L.RL=[0,1.0,-1.9]; p.L.RR=[0,1.0,-1.9]; }
   if(a==='jump'){
-    if(t<.4){ LEGS.forEach(k=>p.L[k]=[0,1.15,-2.4]); }
+    if(t<.4) LEGS.forEach(k=>p.L[k]=[0,1.15,-2.4]);
     else if(t<.85){ const u=(t-.4)/.45; p.z=.17*Math.sin(Math.PI*u); p.pitch=.08*Math.sin(Math.PI*u); LEGS.forEach(k=>p.L[k]=[0,.55,-1.05]); }
     else LEGS.forEach(k=>p.L[k]=[0,1.0,-2.0]);
   }
   if(a==='stretch'){ p.pitch=.32; p.L.FL=[0,-.35,-.95]; p.L.FR=[0,-.35,-.95]; p.L.RL=[0,.75,-1.45]; p.L.RR=[0,.75,-1.45]; }
-  if(a==='trot'){ const ph=t*Math.PI*2*2.2;
-    const lg=q=>{ const lift=Math.max(0,Math.sin(q)); return [0,.8-.2*Math.cos(q)-.12*lift,-1.5-.55*lift]; };
-    p.L.FL=lg(ph); p.L.RR=lg(ph); p.L.FR=lg(ph+Math.PI); p.L.RL=lg(ph+Math.PI);
-    p.z=.006*Math.sin(2*ph); p.pitch=.015*Math.sin(ph); p.roll=.015*Math.sin(ph); }
+  if(a==='trot'){ const ph=t*Math.PI*2*2.2, lg=q=>{ const lift=Math.max(0,Math.sin(q)); return [0,.8-.2*Math.cos(q)-.12*lift,-1.5-.55*lift]; };
+    p.L.FL=lg(ph); p.L.RR=lg(ph); p.L.FR=lg(ph+Math.PI); p.L.RL=lg(ph+Math.PI); p.z=.006*Math.sin(2*ph); p.pitch=.015*Math.sin(ph); p.roll=.015*Math.sin(ph); }
   return p;
 }
 const cur=base();
 function blend(tg,k){ for(const f of ['z','roll','pitch','yaw']) cur[f]+=(tg[f]-cur[f])*k; LEGS.forEach(l=>{ for(let i=0;i<3;i++) cur.L[l][i]+=(tg.L[l][i]-cur.L[l][i])*k; }); }
-function doAction(a){ action=a; aStart=clock; press('#actions','act',a); hideHint(); }
-function clampQ(j,q){ return j.limit?Math.min(j.limit[1],Math.max(j.limit[0],q)):q; }
-function setQ(name,q){ const j=joints[name]; if(!j) return; j.q=clampQ(j,q); j.rot.quaternion.setFromAxisAngle(j.axis,j.q); }
+function doAction(a,silent){ action=a; aStart=clock; press('#actions','opt','act',a); if(!silent) hideHint(); }
+function setQ(n,q){ const j=joints[n]; if(!j) return; j.q=j.limit?Math.min(j.limit[1],Math.max(j.limit[0],q)):q; j.rot.quaternion.setFromAxisAngle(j.axis,j.q); }
 
-/* ---------- camera presets ---------- */
-const PRESETS={ full:{p:[2.4,1.05,2.9],t:[0,.42,0]}, head:{p:[1.55,.78,.95],t:[.55,.52,0]}, leg:{p:[1.05,.32,1.35],t:[.38,.25,.2]}, orbit:{p:[2.6,1.3,3.1],t:[0,.42,0]} };
-function camTo(name,instant){
-  camMode=name; press('#cams','cam',name);
-  const P=PRESETS[name],tgt=new THREE.Vector3(...P.t),pos=new THREE.Vector3(...P.p);
-  if(stage.clientWidth/stage.clientHeight<.9) pos.sub(tgt).multiplyScalar(1.6).add(tgt);
+/* ================= camera ================= */
+const HERO_CAMS={ full:{p:[2.4,1.05,2.9],t:[0,.42,0]}, head:{p:[1.55,.78,.95],t:[.55,.52,0]}, leg:{p:[1.05,.32,1.35],t:[.38,.25,.2]}, orbit:{p:[2.6,1.3,3.1],t:[0,.42,0]} };
+const CH_CAMS={1:{p:[3.6,2.6,3.9],t:[.3,.35,0]},2:{p:[2.1,1.38,1.75],t:[.8,.62,0]},3:{p:[2.25,1.55,1.45],t:[.82,.58,-.05]},4:{p:[2.15,2.2,.02],t:[.92,.47,0]}};
+function camPreset(){ return chapter===0||chapter>4?HERO_CAMS[camMode]:CH_CAMS[chapter]; }
+function camTo(P,instant){
+  const tgt=new THREE.Vector3(...P.t),pos=new THREE.Vector3(...P.p);
+  if(innerWidth/innerHeight<.9) pos.sub(tgt).multiplyScalar(chapter===0?1.6:1.35).add(tgt);
   if(instant){ camera.position.copy(pos); controls.target.copy(tgt); controls.update(); }
   else tween={fp:camera.position.clone(),ft:controls.target.clone(),tp:pos,tt:tgt,s:clock};
-  controls.autoRotate=(name==='orbit'||mode==='exploded')&&!reduce;
 }
-function setFinish(f){ const v=FIN[f]; allMats.forEach(m=>{ if(m.userData.role==='shell'){ if(m.userData.keep!==undefined) m.userData.keep=v[0]; else m.color.setHex(v[0]); m.roughness=v[1]; m.metalness=v[2]; } }); press('#finishes','finish',f); }
+function heroCam(name,instant){ camMode=name; press('#cams','opt','cam',name); if(chapter===0) camTo(HERO_CAMS[name],instant); controls.autoRotate=chapter===0&&(name==='orbit'||mode==='exploded')&&!reduce; }
+let viewOff={x:0,y:0},viewOffT={x:0,y:0};
+function setViewOffsetTarget(){
+  const w=innerWidth,h=innerHeight,story=chapter>=1&&chapter<=4;
+  viewOffT.x=story&&w>820?-Math.min(w*.17,260):0; viewOffT.y=story&&w<=820?h*.2:0;
+}
+function setFinish(f){ const v=FIN[f]; allMats.forEach(m=>{ if(m.userData.role==='shell'){ if(m.userData.keep!==undefined) m.userData.keep=v[0]; else m.color.setHex(v[0]); m.roughness=v[1]; m.metalness=v[2]; } }); press('#finishes','opt','finish',f); }
 
-/* ---------- UI wiring ---------- */
-function press(sel,attr,val){ document.querySelectorAll(sel+' .opt').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset[attr]===val))); }
-document.getElementById('modes').addEventListener('click',e=>{ const b=e.target.closest('[data-mode]'); if(b) setMode(b.dataset.mode); });
-document.getElementById('actions').addEventListener('click',e=>{ const b=e.target.closest('[data-act]'); if(b) doAction(b.dataset.act); });
-document.getElementById('finishes').addEventListener('click',e=>{ const b=e.target.closest('[data-finish]'); if(b) setFinish(b.dataset.finish); });
-document.getElementById('cams').addEventListener('click',e=>{ const b=e.target.closest('[data-cam]'); if(b) camTo(b.dataset.cam); });
+/* ================= UI wiring ================= */
+function press(sel,cls,attr,val){ document.querySelectorAll(sel+' .'+cls+', '+sel+' button').forEach(b=>{ if(b.dataset[attr]!==undefined) b.setAttribute('aria-pressed',String(b.dataset[attr]===val)); }); }
+const on=(id,ev,f)=>document.getElementById(id).addEventListener(ev,f);
+on('modes','click',e=>{ const b=e.target.closest('[data-mode]'); if(b) setMode(b.dataset.mode); });
+on('actions','click',e=>{ const b=e.target.closest('[data-act]'); if(b) doAction(b.dataset.act); });
+on('finishes','click',e=>{ const b=e.target.closest('[data-finish]'); if(b) setFinish(b.dataset.finish); });
+on('cams','click',e=>{ const b=e.target.closest('[data-cam]'); if(b) heroCam(b.dataset.cam); });
+on('lidarMode','click',e=>{ const b=e.target.closest('[data-v]'); if(!b) return; lidarMode=b.dataset.v; press('#lidarMode','x','v',lidarMode); colorLidar(); });
+on('domain','click',e=>{ const b=e.target.closest('[data-v]'); if(!b) return; domain=b.dataset.v; press('#domain','x','v',domain); setRouter(); colorLidar(); });
+on('splat','input',e=>{ splatT=+e.target.value; if(splatT<.5){ tokT=0; document.getElementById('tCount').textContent='—'; } });
+on('tokBtn','click',()=>{ if(splatT<.5){ splatT=1; document.getElementById('splat').value=1; } gBins=null; tokT=tokT>.5?0:1; document.getElementById('tokBtn').textContent=tokT?'← 还原高斯':'Tokenize →'; document.getElementById('tCount').textContent=tokT?NTOK:'—'; });
+document.getElementById('gCount').textContent=G.length.toLocaleString('en');
+setRouter();
 
-const ray=new THREE.Raycaster(),ndc=new THREE.Vector2(),tmpV=new THREE.Vector3(),tmpW=new THREE.Vector3();
+/* pointer */
+const ray=new THREE.Raycaster(),ndc=new THREE.Vector2();
 let down=null,pointerActive=false,lastMove=-10;
 function setNdc(e){ const r=canvas.getBoundingClientRect(); ndc.set((e.clientX-r.left)/r.width*2-1,-((e.clientY-r.top)/r.height)*2+1); }
 function hitRobot(){ if(!robot) return null; ray.setFromCamera(ndc,camera); return ray.intersectObjects(meshes.filter(o=>o.visible),false)[0]; }
+function hitObj(){ ray.setFromCamera(ndc,camera); const h=ray.intersectObjects(OBJS.map(o=>o.mesh),false)[0]; return h?OBJS.find(o=>o.mesh===h.object):null; }
 canvas.addEventListener('pointerdown',e=>{ down={x:e.clientX,y:e.clientY}; });
-canvas.addEventListener('pointermove',e=>{ setNdc(e); pointerActive=true; lastMove=clock; if(e.pointerType==='mouse') canvas.classList.toggle('hover',!!hitRobot()); });
+canvas.addEventListener('pointermove',e=>{ setNdc(e); pointerActive=true; lastMove=clock;
+  if(e.pointerType==='mouse') canvas.classList.toggle('hover', chapter===0?!!hitRobot():(chapter===3&&!!hitObj())); });
 canvas.addEventListener('pointerleave',()=>{ pointerActive=false; canvas.classList.remove('hover'); });
 const CYCLE=['shake','jump','stretch','sit','trot']; let cycleI=0;
 canvas.addEventListener('pointerup',e=>{
   if(!down) return; const moved=Math.hypot(e.clientX-down.x,e.clientY-down.y); down=null; if(moved>6) return;
-  setNdc(e); const h=hitRobot(); if(!h) return;
+  setNdc(e);
+  if(chapter===3){ const o=hitObj(); if(o) actPick(o); return; }
+  if(chapter!==0) return;
+  const h=hitRobot(); if(!h) return;
   if(mode==='exploded'){ const k=partOf(linkOfMesh.get(h.object)); if(k){ openPanel(k); return; } }
   doAction(action==='sit'?'idle':CYCLE[cycleI++%CYCLE.length]);
 });
-function partOf(link){ if(!link) return null; if(link==='base') return 'base'; if(/_hip$/.test(link)) return 'hip'; if(/_(thigh|calf)$/.test(link)) return 'thigh'; if(/_foot$/.test(link)) return 'foot'; return null; }
-
+function partOf(l){ if(!l) return null; if(l==='base') return 'base'; if(/_hip$/.test(l)) return 'hip'; if(/_(thigh|calf)$/.test(l)) return 'thigh'; if(/_foot$/.test(l)) return 'foot'; return null; }
 const hint=document.getElementById('hint'); let hintOn=true;
 function hideHint(){ hintOn=false; hint.style.opacity=0; }
 
-/* ---------- callouts ---------- */
+/* ================= callouts (hero) ================= */
 const svg=document.getElementById('leaders'),coWrap=document.getElementById('callouts'),NS='http://www.w3.org/2000/svg';
 function mkCallout(o){
-  o.line=document.createElementNS(NS,'line'); svg.appendChild(o.line);
-  o.cross=document.createElementNS(NS,'path'); svg.appendChild(o.cross);
-  o.el=document.createElement(o.tag?'button':'div'); o.el.className='co'+(o.tag?' tag':''); o.el.style.opacity=0;
-  if(o.tag){ o.el.innerHTML=`<span class="no">${o.no}</span><span>${o.nm}</span><span class="zh">${o.zh}</span>`; o.el.addEventListener('click',()=>openPanel(o.k)); }
+  o.line=document.createElementNS(NS,'line'); svg.appendChild(o.line); o.cross=document.createElementNS(NS,'path'); svg.appendChild(o.cross);
+  o.el=document.createElement(o.tag?'button':'div'); o.el.className='co'+(o.tag?' tag':''); o.el.style.opacity=0; o.line.style.opacity=0; o.cross.style.opacity=0;
+  if(o.tag){ o.el.innerHTML=`<span class="no">${o.no}</span><span>${o.nm}</span><span class="zh">${o.zh}</span>`; o.el.addEventListener('click',()=>openPanel(o.k)); o.el.style.pointerEvents='none'; o.el.tabIndex=-1; }
   coWrap.appendChild(o.el); return o;
 }
 const deg=r=>(r*180/Math.PI).toFixed(1);
 let READ=[],TAGS=[];
 function buildCallouts(){
   READ=[
-    {link:'base',off:[.2,0,.06],dx:70,dy:-64,txt:()=>`<span class="k">base_z</span> ${(baseHeight()).toFixed(3)} m`},
-    {link:'FL_calf',joint:'FL_calf_joint',off:[0,.02,0],dx:90,dy:26,txt:()=>`<span class="k">FL_calf_joint</span> ${deg(joints.FL_calf_joint.q).padStart(6)}°`},
+    {link:'base',off:[.2,0,.06],dx:70,dy:-64,txt:()=>`<span class="k">base_z</span> ${baseHeight().toFixed(3)} m`},
+    {link:'FL_calf',off:[0,.02,0],dx:90,dy:26,txt:()=>`<span class="k">FL_calf_joint</span> ${deg(joints.FL_calf_joint.q).padStart(6)}°`},
     {link:'RL_thigh',off:[0,.03,0],dx:-120,dy:-58,txt:()=>`<span class="k">RL_thigh_joint</span> ${deg(joints.RL_thigh_joint.q).padStart(6)}°`},
   ].map(mkCallout);
   TAGS=[
@@ -509,20 +886,20 @@ function buildCallouts(){
     {tag:1,k:'foot',link:'RL_foot',off:[0,0,0],dx:-70,dy:40,no:'U-04',nm:'RL_foot',zh:'联系'},
   ].map(mkCallout);
 }
-function project(v){ v.project(camera); return {x:(v.x*.5+.5)*stage.clientWidth,y:(-v.y*.5+.5)*stage.clientHeight}; }
+function project(v){ v.project(camera); return {x:(v.x*.5+.5)*innerWidth,y:(-v.y*.5+.5)*innerHeight}; }
 function placeCallout(o,show){
   o.el.style.opacity=show?1:0; o.line.style.opacity=show?.75:0; o.cross.style.opacity=show?1:0;
   if(o.tag){ o.el.style.pointerEvents=show?'auto':'none'; o.el.tabIndex=show?0:-1; }
   if(!show) return;
-  tmpV.set(...o.off); links[o.link].localToWorld(tmpV); const a=project(tmpV); if(!isFinite(a.x)||!isFinite(a.y)) return;
-  const k=stage.clientWidth<760?.6:1, bx=a.x+o.dx*k, by=a.y+o.dy*k;
+  V.set(...o.off); links[o.link].localToWorld(V); const a=project(V); if(!isFinite(a.x)||!isFinite(a.y)) return;
+  const k=innerWidth<820?.6:1,bx=a.x+o.dx*k,by=a.y+o.dy*k;
   o.line.setAttribute('x1',a.x); o.line.setAttribute('y1',a.y); o.line.setAttribute('x2',bx); o.line.setAttribute('y2',by);
   o.cross.setAttribute('d',`M${a.x-5} ${a.y}H${a.x+5}M${a.x} ${a.y-5}V${a.y+5}`);
   if(!o.tag) o.el.innerHTML=o.txt();
   o.el.style.transform=`translate(${bx}px,${by}px) translate(${o.dx<0?'calc(-100% - 6px)':'6px'},-50%)`;
 }
 
-/* ---------- panel ---------- */
+/* ================= panel ================= */
 const panel=document.getElementById('panel'),pbody=document.getElementById('panel-body');
 function openPanel(k){
   const card=document.getElementById('card-'+k);
@@ -530,11 +907,7 @@ function openPanel(k){
   panel.hidden=false; bindCopy(pbody);
 }
 function closePanel(){ panel.hidden=true; }
-document.getElementById('panel-close').addEventListener('click',closePanel);
-document.querySelectorAll('.locate').forEach(b=>b.addEventListener('click',()=>{
-  stage.scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'});
-  if(mode!=='exploded') setMode('exploded'); openPanel(b.dataset.part);
-}));
+on('panel-close','click',closePanel);
 function bindCopy(root){
   root.querySelectorAll('.copy').forEach(btn=>btn.onclick=()=>{
     const v=btn.parentElement.querySelector('.v'),txt=v.textContent;
@@ -545,77 +918,232 @@ function bindCopy(root){
 }
 bindCopy(document);
 
-/* ---------- resize ---------- */
-function resize(){ const w=stage.clientWidth,h=stage.clientHeight; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); svg.setAttribute('viewBox',`0 0 ${w} ${h}`); }
-new ResizeObserver(resize).observe(stage);
-let clock=0,last=performance.now();
-resize(); camTo('full',true);
+/* ================= arm executor (chapters 02–04) ================= */
+const READY=new THREE.Vector3(.78,.86,0);
+const ex={pts:null,ev:{},i:0,mode:null,pause:0,K:16,held:null,heldOff:new THREE.Vector3(),onDone:null};
+const chunkGhost=new THREE.Points(new THREE.BufferGeometry(),new THREE.PointsMaterial({color:0xffb27a,size:.022,transparent:true,opacity:.95,depthWrite:false,fog:false}));
+chunkGhost.geometry.setAttribute('position',new THREE.Float32BufferAttribute(new Float32Array(16*3),3)); scene.add(chunkGhost); chunkGhost.visible=false;
+const chunkLine=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0xffb27a,transparent:true,opacity:.6,fog:false}));
+chunkLine.geometry.setAttribute('position',new THREE.Float32BufferAttribute(new Float32Array(16*3),3)); scene.add(chunkLine); chunkLine.visible=false;
+function tipWorld(out){ return arm.tip.getWorldPosition(out); }
+function polyline(wps,step){ const out=[]; for(let i=0;i<wps.length-1;i++){ const a=wps[i],b=wps[i+1],n=Math.max(1,Math.ceil(a.distanceTo(b)/step)); for(let k=0;k<n;k++) out.push(a.clone().lerp(b,k/n)); } out.push(wps[wps.length-1].clone()); return out; }
+function run(wps,events,mode,step,onDone){
+  const pts=[],ev={}; let start=tipWorld(new THREE.Vector3());
+  const all=[start,...wps.map(w=>w.p)]; let idx=0;
+  for(let i=0;i<all.length-1;i++){ const seg=polyline([all[i],all[i+1]],step); seg.pop(); pts.push(...seg); if(wps[i].ev) ev[pts.length]=wps[i].ev; }
+  pts.push(all[all.length-1].clone()); if(wps[wps.length-1].ev) ev[pts.length-1]=wps[wps.length-1].ev;
+  Object.assign(ex,{pts,ev,i:0,mode,pause:mode==='act'?.25:0,onDone,fired:{}});
+}
+function slotFree(){ return SLOTS.findIndex((s,i)=>!OBJS.some(o=>o.slot===i)); }
+const actStatus=document.getElementById('actStatus');
+function actPick(o){
+  if(ex.pts){ return; }
+  let dest,slot=-1;
+  if(o.slot>=0){ dest=new THREE.Vector3(o.home[0],TABLE_Y+o.h,o.home[1]); }
+  else { slot=slotFree(); if(slot<0){ actStatus.textContent='// 托盘满了：先点托盘上的物体放回去'; return; } dest=new THREE.Vector3(SLOTS[slot][0],TABLE_Y+.004+o.h,SLOTS[slot][1]); }
+  const grabY=o.h*2-.03, P=o.mesh.position, up=.2;
+  const w=[
+    {p:new THREE.Vector3(P.x,TABLE_Y+up+o.h*2,P.z)},
+    {p:new THREE.Vector3(P.x,P.y-o.h+grabY,P.z),ev:{grip:o}},
+    {p:new THREE.Vector3(P.x,TABLE_Y+up+o.h*2,P.z)},
+    {p:new THREE.Vector3(dest.x,TABLE_Y+up+o.h*2,dest.z)},
+    {p:new THREE.Vector3(dest.x,dest.y-o.h+grabY,dest.z),ev:{release:o,slot}},
+    {p:new THREE.Vector3(dest.x,TABLE_Y+up+o.h*2,dest.z)},
+    {p:READY.clone()},
+  ];
+  run(w,null,'act',.018,()=>{ actStatus.textContent='// 完成。再点一个物体试试'; document.getElementById('chunkI').textContent='—'; document.getElementById('stepI').textContent='—'; });
+  actStatus.textContent=`// 目标：${o.name} → ${o.slot>=0?'放回原位':'托盘'}`;
+}
+on('resetBtn','click',()=>{ if(ex.pts) return; OBJS.forEach(o=>{ o.slot=-1; o.mesh.position.set(o.home[0],TABLE_Y+o.h,o.home[1]); }); gBins=null; actStatus.textContent='// 已复位：点击一个物体'; });
+const qTmp=[0,0,0,0];
+function updateArm(dt){
+  if(!arm.base) return;
+  const deployed=chapter>=2&&chapter<=4;
+  let target=null;
+  if(ex.pts){
+    if(ex.pause>0){ ex.pause-=dt; }
+    else {
+      const speed=ex.mode==='act'?38:46, ni=Math.min(ex.pts.length-1,ex.i+speed*dt);
+      for(let k=Math.floor(ex.i)+1;k<=Math.floor(ni);k++){ const e=ex.ev[k]; if(e&&!ex.fired[k]){ ex.fired[k]=1; handleEv(e); } if(ex.mode==='act'&&k%ex.K===0&&k<ex.pts.length-1){ ex.i=k; ex.pause=.16; break; } }
+      if(ex.pause<=0) ex.i=ni;
+    }
+    target=ex.pts[Math.floor(ex.i)];
+    if(ex.mode==='trace'&&traceOn) traceStep(Math.floor(ex.i));
+    if(ex.mode==='act'){ const c=Math.floor(ex.i/ex.K), n=Math.ceil(ex.pts.length/ex.K);
+      document.getElementById('chunkI').textContent=`${String(c+1).padStart(2,'0')}/${String(n).padStart(2,'0')}`; document.getElementById('stepI').textContent=Math.floor(ex.i);
+      const s=c*ex.K, pa=chunkGhost.geometry.attributes.position, la=chunkLine.geometry.attributes.position;
+      for(let k=0;k<16;k++){ const p=ex.pts[Math.min(ex.pts.length-1,s+k)]; pa.setXYZ(k,p.x,p.y,p.z); la.setXYZ(k,p.x,p.y,p.z); }
+      pa.needsUpdate=la.needsUpdate=true; chunkGhost.visible=chunkLine.visible=true;
+      chunkGhost.material.opacity=ex.pause>0?.4+.6*Math.abs(Math.sin(clock*30)):.95; }
+    if(ex.i>=ex.pts.length-1){ const d=ex.onDone; ex.pts=null; chunkGhost.visible=chunkLine.visible=false; if(d) d(); }
+  } else if(deployed) target=READY;
+  const q=target?ik(target):FOLD;
+  const k=ex.pts?1:damp(dt,4);
+  for(let i=0;i<4;i++) arm.q[i]+=(q[i]-arm.q[i])*k;
+  arm.grip+=((ex.held?.014:.026)-arm.grip)*damp(dt,10);
+  applyArm(arm.q,arm.grip);
+  if(ex.held){ links.base.updateMatrixWorld(true); tipWorld(V); ex.held.mesh.position.copy(V).add(ex.heldOff); }
+}
+function handleEv(e){
+  if(e.grip){ tipWorld(V); ex.held=e.grip; ex.heldOff.copy(e.grip.mesh.position).sub(V); }
+  if(e.release){ const o=e.release; ex.held=null; o.mesh.position.y=TABLE_Y+(e.slot>=0?.004:0)+o.h; o.slot=e.slot; gBins=null; }
+}
 
-/* ---------- per-frame robot update ---------- */
-const ease=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
-const look={yaw:0,pitch:0};
-const FOOT_R=.022;
-function baseHeight(){ links.base.getWorldPosition(tmpW); return tmpW.y/S; }
-function updateRobot(dt){
+/* ================= trajectory pad + DCT (chapter 04) ================= */
+const pad=document.getElementById('pad'),pctx=pad.getContext('2d'),N=128;
+let raw=[],rec=[],drawing=false,stroke=[];
+function sampleCurve(){ const p=[]; for(let i=0;i<N;i++){ const t=i/(N-1); p.push([.5+.36*Math.sin(2*Math.PI*t)*Math.cos(.5*Math.PI*t)+.04*Math.sin(9*t),.5+.28*Math.sin(4*Math.PI*t)*.9+.06*Math.cos(5*Math.PI*t)]); } return p; }
+function resample(s){ if(s.length<2) return null; const d=[0]; for(let i=1;i<s.length;i++) d.push(d[i-1]+Math.hypot(s[i][0]-s[i-1][0],s[i][1]-s[i-1][1])); const L=d[d.length-1]; if(L<.05) return null;
+  const out=[]; let j=0; for(let i=0;i<N;i++){ const t=i/(N-1)*L; while(j<d.length-2&&d[j+1]<t) j++; const u=(t-d[j])/((d[j+1]-d[j])||1); out.push([s[j][0]+(s[j+1][0]-s[j][0])*u,s[j][1]+(s[j+1][1]-s[j][1])*u]); } return out; }
+function dct(x){ const n=x.length,X=[]; for(let k=0;k<n;k++){ let s=0; for(let i=0;i<n;i++) s+=x[i]*Math.cos(Math.PI/n*(i+.5)*k); X.push(s); } return X; }
+function idct(X,K,n){ const x=[]; for(let i=0;i<n;i++){ let s=X[0]/n; for(let k=1;k<K;k++) s+=2/n*X[k]*Math.cos(Math.PI/n*(i+.5)*k); x.push(s); } return x; }
+function compress(){
+  const K=+document.getElementById('kSlider').value;
+  const xs=raw.map(p=>p[0]),ys=raw.map(p=>p[1]);
+  const q=v=>Math.round(v*64)/64;                                    // quantise each kept coefficient to an integer token
+  const X=dct(xs).map(q),Y=dct(ys).map(q);
+  const rx=idct(X,K,N),ry=idct(Y,K,N); rec=rx.map((v,i)=>[v,ry[i]]);
+  document.getElementById('rawT').textContent=N*2; document.getElementById('cmpT').textContent=K*2;
+  document.getElementById('redT').textContent='−'+Math.round((1-K/N)*100)+'%';
+  drawPad();
+}
+function drawPad(){
+  const w=pad.width,h=pad.height; pctx.clearRect(0,0,w,h);
+  pctx.strokeStyle='rgba(239,235,243,.08)'; pctx.lineWidth=1;
+  for(let x=0;x<=w;x+=w/16){ pctx.beginPath(); pctx.moveTo(x,0); pctx.lineTo(x,h); pctx.stroke(); }
+  for(let y=0;y<=h;y+=h/9){ pctx.beginPath(); pctx.moveTo(0,y); pctx.lineTo(w,y); pctx.stroke(); }
+  const line=(pts,c,lw,dash)=>{ if(!pts.length) return; pctx.setLineDash(dash||[]); pctx.strokeStyle=c; pctx.lineWidth=lw; pctx.beginPath(); pts.forEach((p,i)=>{ const X=p[0]*w,Y=p[1]*h; i?pctx.lineTo(X,Y):pctx.moveTo(X,Y); }); pctx.stroke(); pctx.setLineDash([]); };
+  if(drawing){ line(stroke,'rgba(239,235,243,.9)',3); return; }
+  line(raw,'rgba(239,235,243,.55)',3,[6,6]); line(rec,'#d29466',3.5);
+  pctx.font='22px "JetBrains Mono", monospace'; pctx.fillStyle='rgba(239,235,243,.6)'; pctx.fillText('- - raw   ',16,h-16); pctx.fillStyle='#d29466'; pctx.fillText('— reconstructed',150,h-16);
+}
+function padPt(e){ const r=pad.getBoundingClientRect(); return [THREE.MathUtils.clamp((e.clientX-r.left)/r.width,0,1),THREE.MathUtils.clamp((e.clientY-r.top)/r.height,0,1)]; }
+pad.addEventListener('pointerdown',e=>{ drawing=true; stroke=[padPt(e)]; pad.setPointerCapture(e.pointerId); drawPad(); });
+pad.addEventListener('pointermove',e=>{ if(!drawing) return; stroke.push(padPt(e)); drawPad(); });
+const endDraw=()=>{ if(!drawing) return; drawing=false; const r=resample(stroke); if(r){ raw=r; compress(); startTrace(); } else drawPad(); };
+pad.addEventListener('pointerup',endDraw); pad.addEventListener('pointercancel',endDraw);
+on('kSlider','input',()=>{ if(raw.length) compress(); });
+on('drawBtn','click',()=>{ if(rec.length) startTrace(); });
+on('clearBtn','click',()=>{ raw=[];rec=[]; drawPad(); clearTrail(); });
+raw=sampleCurve(); compress();
+// trail drawn on the table by the arm
+const TRAILMAX=2000,trailGeo=new THREE.BufferGeometry(); trailGeo.setAttribute('position',new THREE.Float32BufferAttribute(new Float32Array(TRAILMAX*3),3)); trailGeo.setDrawRange(0,0);
+const trail=new THREE.Line(trailGeo,new THREE.LineBasicMaterial({color:0xffa766,fog:false})); scene.add(trail); trail.visible=false;
+let traceOn=false,traceStart=0,traceEnd=0;
+const padToTable=p=>new THREE.Vector3(.72+p[1]*.42,TABLE_Y+.006,.3-p[0]*.6);
+function clearTrail(){ trailGeo.setDrawRange(0,0); }
+function startTrace(){
+  if(ex.pts&&ex.mode==='act') return;
+  clearTrail(); const pts=rec.map(padToTable); const s=pts[0];
+  const w=[{p:s.clone().setY(TABLE_Y+.12)},{p:s.clone()}];
+  for(let i=1;i<pts.length;i++) w.push({p:pts[i]});
+  w.push({p:pts[pts.length-1].clone().setY(TABLE_Y+.12)}); w.push({p:READY.clone()});
+  run(w,null,'trace',.012,()=>{ traceOn=false; });
+  // indices of the drawn stroke inside the executor path
+  let a=-1,b=-1; ex.pts.forEach((p,i)=>{ if(Math.abs(p.y-(TABLE_Y+.006))<.002){ if(a<0) a=i; b=i; } });
+  traceStart=a; traceEnd=b; traceOn=a>=0;
+}
+function traceStep(i){
+  if(i<traceStart) return; const n=Math.min(i,traceEnd)-traceStart+1, pa=trailGeo.attributes.position;
+  for(let k=trailGeo.drawRange.count;k<n&&k<TRAILMAX;k++){ const p=ex.pts[traceStart+k]; pa.setXYZ(k,p.x,p.y,p.z); }
+  pa.needsUpdate=true; trailGeo.setDrawRange(0,Math.min(n,TRAILMAX));
+}
+
+/* ================= HAR easter egg ================= */
+const har=document.getElementById('har'),hctx=har.getContext('2d'),harp=document.getElementById('harp');
+const H=[[],[],[]]; let prevY=null,prevV=0,prevP=0,predT=0;
+const HARL={idle:'stand',sit:'sit',shake:'wave',jump:'jump',stretch:'stretch',trot:'trot'};
+function updateHAR(dt){
+  if(!robot||chapter!==0||innerWidth<=820) return;
+  links.base.getWorldPosition(V); const y=V.y/S;
+  if(prevY===null) prevY=y; const v=(y-prevY)/dt, a=(v-prevV)/dt; prevY=y; prevV=v;
+  const gp=(cur.pitch-prevP)/dt; prevP=cur.pitch;
+  H[0].push(THREE.MathUtils.clamp(a/40,-1,1)+(Math.random()-.5)*.06); H[1].push(THREE.MathUtils.clamp(gp/3,-1,1)+(Math.random()-.5)*.05); H[2].push(THREE.MathUtils.clamp(cur.roll*6+Math.sin(cur.L.FL[1]*4)*.2,-1,1));
+  H.forEach(h=>{ if(h.length>80) h.shift(); });
+  const w=har.width,hh=har.height; hctx.clearRect(0,0,w,hh);
+  ['#efebf3','#d29466','#8e84a0'].forEach((c,j)=>{ hctx.strokeStyle=c; hctx.globalAlpha=j?.9:.7; hctx.lineWidth=2; hctx.beginPath(); H[j].forEach((s,i)=>{ const X=i/79*w,Y=hh/2-s*hh*.42; i?hctx.lineTo(X,Y):hctx.moveTo(X,Y); }); hctx.stroke(); });
+  hctx.globalAlpha=1;
+  predT+=dt; if(predT>.5){ predT=0; const lag=clock-aStart<.4?'…':''; harp.textContent=lag?'… · —':`${HARL[action]} · ${(.86+Math.random()*.12).toFixed(2)}`; }
+}
+
+/* ================= chapters ================= */
+const sections=[...document.querySelectorAll('#story [data-ch]')];
+function currentChapter(){ const mid=innerHeight*.5; for(const s of sections){ const r=s.getBoundingClientRect(); if(r.top<=mid&&r.bottom>mid) return +s.dataset.ch; } return 5; }
+function enterChapter(c){
+  const prev=chapter; chapter=c; setViewOffsetTarget();
+  if(c!==0){ if(mode!=='exterior') setMode('exterior',true); if(action!=='idle') doAction('idle',true); closePanel(); }
+  controls.autoRotate=c===0&&(mode==='exploded'||camMode==='orbit')&&!reduce;
+  table.visible=c>=2; OBJS.forEach(o=>o.mesh.visible=c>=2); trail.visible=c===4;
+  if(c===1&&!lidar&&robot) setTimeout(buildLidar,30);
+  if(c!==2){ splatT=0; tokT=0; document.getElementById('splat').value=0; document.getElementById('tokBtn').textContent='Tokenize →'; document.getElementById('tCount').textContent='—'; }
+  if(c===4&&prev!==4&&!ex.pts&&rec.length) setTimeout(()=>{ if(chapter===4) startTrace(); },700);
+  if(c<=4) camTo(camPreset());
+}
+addEventListener('scroll',()=>{ const c=currentChapter(); if(c!==chapter&&robot) enterChapter(c); },{passive:true});
+
+/* ================= resize ================= */
+function resize(){ const w=innerWidth,h=innerHeight; renderer.setSize(w,h,false); camera.aspect=w/h; svg.setAttribute('viewBox',`0 0 ${w} ${h}`); setViewOffsetTarget(); applyViewOffset(); }
+function applyViewOffset(){ const w=innerWidth,h=innerHeight; camera.setViewOffset(w,h,viewOff.x,viewOff.y,w,h); camera.updateProjectionMatrix(); }
+addEventListener('resize',resize);
+resize(); camTo(HERO_CAMS.full,true);
+
+/* ================= per-frame ================= */
+const look={yaw:0,pitch:0},FOOT_R=.022;
+function baseHeight(){ links.base.getWorldPosition(V2); return V2.y/S; }
+function updateDog(dt){
   const t=clock-aStart;
-  if(t>DUR[action]){ action='idle'; press('#actions','act','idle'); }
-  blend(poseFor(action,t,clock),1-Math.exp(-dt*(action==='jump'?16:8)));
-
-  // body turns a little toward the pointer
+  if(t>DUR[action]){ action='idle'; press('#actions','opt','act','idle'); }
+  blend(poseFor(action,t,clock),damp(dt,action==='jump'?16:8));
   let ly=0,lp=0;
-  if(pointerActive&&clock-lastMove<3&&mode!=='exploded'&&(action==='idle'||action==='sit')){
-    ray.setFromCamera(ndc,camera); links.base.getWorldPosition(tmpW);
-    const p=ray.ray.at(camera.position.distanceTo(tmpW),tmpV); robotRoot.worldToLocal(p);
-    ly=THREE.MathUtils.clamp(Math.atan2(p.y,p.x-.2),-.3,.3);
-    lp=THREE.MathUtils.clamp(-Math.atan2(p.z-.3,Math.hypot(p.x,p.y))*.4,-.12,.12);
+  if(chapter===0&&pointerActive&&clock-lastMove<3&&mode!=='exploded'&&(action==='idle'||action==='sit')){
+    ray.setFromCamera(ndc,camera); links.base.getWorldPosition(V2);
+    const p=ray.ray.at(camera.position.distanceTo(V2),V); robotRoot.worldToLocal(p);
+    ly=THREE.MathUtils.clamp(Math.atan2(p.y,p.x-.2),-.3,.3); lp=THREE.MathUtils.clamp(-Math.atan2(p.z-.3,Math.hypot(p.x,p.y))*.4,-.12,.12);
   }
-  look.yaw+=(ly-look.yaw)*(1-Math.exp(-dt*4)); look.pitch+=(lp-look.pitch)*(1-Math.exp(-dt*4));
-
-  explodeT+=(explodeTarget-explodeT)*(1-Math.exp(-dt*5));
-  const e=ease(Math.min(1,Math.max(0,explodeT)));
-
+  look.yaw+=(ly-look.yaw)*damp(dt,4); look.pitch+=(lp-look.pitch)*damp(dt,4);
+  explodeT+=(explodeTarget-explodeT)*damp(dt,5); const e=ease(Math.min(1,Math.max(0,explodeT)));
   LEGS.forEach(l=>{ const q=cur.L[l],s=SIDE[l];
     setQ(l+'_hip_joint',q[0]*s); setQ(l+'_thigh_joint',q[1]); setQ(l+'_calf_joint',q[2]);
     const hip=joints[l+'_hip_joint'],th=joints[l+'_thigh_joint'],ca=joints[l+'_calf_joint'],ft=joints[l+'_foot_joint'];
-    hip.g.position.copy(hip.g.userData.origin).multiply(tmpV.set(1+.2*e,1,1)).add(tmpW.set(0,s*.09*e,0));
+    hip.g.position.copy(hip.g.userData.origin).multiply(V.set(1+.2*e,1,1)).add(V2.set(0,s*.09*e,0));
     th.g.position.copy(th.g.userData.origin).multiplyScalar(1+1.6*e);
     ca.g.position.copy(ca.g.userData.origin).multiplyScalar(1+.25*e);
     ft.g.position.copy(ft.g.userData.origin).multiplyScalar(1+.35*e);
   });
-  const b=links.base;
-  b.rotation.set(cur.roll,cur.pitch+look.pitch,cur.yaw+look.yaw,'ZYX');
-  b.position.set(0,0,0);
-  // keep the lowest foot on the ground, then add the pose's own lift
+  links.base.rotation.set(cur.roll,cur.pitch+look.pitch,cur.yaw+look.yaw,'ZYX'); links.base.position.set(0,0,0);
   robotRoot.position.y=0; robotRoot.updateMatrixWorld(true);
-  let minY=Infinity; LEGS.forEach(l=>{ links[l+'_foot'].getWorldPosition(tmpW); minY=Math.min(minY,tmpW.y); });
-  robotRoot.position.y=FOOT_R*S-minY+(cur.z+.04*e)*S;
-  if(!tween){ const want=PRESETS[camMode].t[1]+.32*e; controls.target.y+=(want-controls.target.y)*(1-Math.exp(-dt*4)); }
+  let minY=Infinity; LEGS.forEach(l=>{ links[l+'_foot'].getWorldPosition(V); minY=Math.min(minY,V.y); });
+  robotRoot.position.y=FOOT_R*S-minY+(cur.z+.04*e)*S; robotRoot.updateMatrixWorld(true);
+  if(chapter===0&&!tween){ const want=HERO_CAMS[camMode].t[1]+.32*e; controls.target.y+=(want-controls.target.y)*damp(dt,4); }
 }
 
 function frame(now){
+  requestAnimationFrame(frame);
   const dt=Math.min((now-last)/1000,.05); last=now; clock+=dt;
-  if(robot) updateRobot(dt);
-  if(!reduce){
-    const a=dgeo.attributes.position;
+  if(chapter>=5&&scrollY>innerHeight) return;      // CV section covers the canvas
+  if(robot){ updateDog(dt); updateArm(dt); updateHAR(dt); }
+  updateDomain(dt); updateGaussians(dt);
+  if(lidar){ lidarFade+=((chapter===1?1:0)-lidarFade)*damp(dt,4); lidar.visible=lidarFade>.01; lidarMat.uniforms.uFade.value=lidarFade; lidarMat.uniforms.uSweep.value=reduce?0:(clock*2.2)%(Math.PI*2);
+    frustum.material.opacity=lidarFade*(lidarMode==='fused'?.9:0); frustum.visible=frustum.material.opacity>.01; }
+  if(!reduce){ const a=dgeo.attributes.position;
     for(let i=0;i<DUST;i++){ let y=a.array[i*3+1]-dsp[i]*dt; a.array[i*3]+=Math.sin(clock*.3+i)*dt*.05+dt*.06; if(y<0){ y=5; a.array[i*3]=(Math.random()-.5)*14; } if(a.array[i*3]>7) a.array[i*3]=-7; a.array[i*3+1]=y; }
-    a.needsUpdate=true;
-  }
-  if(tween){ const u=Math.min(1,(clock-tween.s)/1.1),k=ease(u); camera.position.lerpVectors(tween.fp,tween.tp,k); controls.target.lerpVectors(tween.ft,tween.tt,k); if(u>=1) tween=null; }
+    a.needsUpdate=true; }
+  viewOff.x+=(viewOffT.x-viewOff.x)*damp(dt,4); viewOff.y+=(viewOffT.y-viewOff.y)*damp(dt,4); applyViewOffset();
+  if(tween){ const u=Math.min(1,(clock-tween.s)/1.2),k=ease(u); camera.position.lerpVectors(tween.fp,tween.tp,k); controls.target.lerpVectors(tween.ft,tween.tt,k); if(u>=1) tween=null; }
   controls.update();
   renderer.render(scene,camera);
   if(robot){
-    READ.forEach(o=>placeCallout(o,explodeT<.1&&stage.clientWidth>=560));
-    TAGS.forEach(o=>placeCallout(o,explodeT>.6));
-    if(hintOn){ links.base.getWorldPosition(tmpV); tmpV.y+=.32; tmpV.x+=.35; const s=project(tmpV);
-      hint.style.transform=`translate(${s.x}px,${s.y}px) translate(-50%,-100%)`; hint.style.opacity=explodeT>.1?0:1; }
+    READ.forEach(o=>placeCallout(o,chapter===0&&explodeT<.1&&innerWidth>=560));
+    TAGS.forEach(o=>placeCallout(o,chapter===0&&explodeT>.6));
+    if(hintOn){ links.base.getWorldPosition(V); V.y+=.32; V.x+=.35; const s=project(V); hint.style.transform=`translate(${s.x}px,${s.y}px) translate(-50%,-100%)`; hint.style.opacity=(chapter===0&&explodeT<.1)?1:0; }
   }
-  requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
 
 loadRobot().then(()=>{
-  buildCallouts(); setMode(mode,true);
+  buildCallouts(); setMode(mode,true); applyArm(arm.q,arm.grip);
   loaderEl.style.opacity=0; setTimeout(()=>loaderEl.hidden=true,600);
+  const c=currentChapter(); if(c!==chapter) enterChapter(c);
 }).catch(err=>{
   console.error(err);
   loaderEl.innerHTML=location.protocol==='file:'
