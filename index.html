@@ -642,13 +642,13 @@ async function loadRobot(){
 }
 
 /* ================= arm on Go2's back (procedural, metres, base-link frame) ================= */
-const L1=.34,L2=.32,SH=.07,WR=.115;
+const L1=.27,L2=.25,SH=.06,WR=.11;
 const arm={};
 function armMat(role){ const m=role==='shell'?BASEMAT.shell():(role==='cu'?new THREE.MeshStandardMaterial({color:0xc27f55,roughness:.3,metalness:.95}):BASEMAT.dark()); m.userData.role=role==='shell'?'shell':'armfix'; if(role==='shell') allMats.push(m); armMats.push(m); return m; }
 function buildArm(){
   const shell=armMat('shell'),dark=armMat('dark'),cu=armMat('cu');
   const add=(p,g,m,pos,rot)=>{ const o=new THREE.Mesh(g,m); if(pos) o.position.set(...pos); if(rot) o.rotation.set(...rot); o.castShadow=true; o.receiveShadow=true; p.add(o); return o; };
-  const base=new THREE.Group(); base.position.set(-.04,0,.058); links.base.add(base); arm.base=base;
+  const base=new THREE.Group(); base.position.set(.1,0,.058); links.base.add(base); arm.base=base;
   add(base,new THREE.CylinderGeometry(.045,.05,.02,32),dark,[0,0,.01],[Math.PI/2,0,0]);
   const yaw=new THREE.Group(); base.add(yaw); arm.yaw=yaw;
   add(yaw,new THREE.CylinderGeometry(.036,.04,SH,28),shell,[0,0,SH/2],[Math.PI/2,0,0]);
@@ -759,11 +759,11 @@ function updateGaussians(dt){
 /* ================= LiDAR (chapter 01) ================= */
 let lidar=null, lidarMode='raw';
 const lidarMat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,
-  uniforms:{uSweep:{value:0},uSize:{value:2.2*Math.min(devicePixelRatio,2)},uFade:{value:0}},
-  vertexShader:`attribute vec3 color; attribute float az; uniform float uSweep; uniform float uSize; uniform float uFade; varying vec3 vC; varying float vA;
-    void main(){ float d=mod(uSweep-az,6.2831853); float b=.45+.55*exp(-d*1.4); vC=color*b; vec4 mv=modelViewMatrix*vec4(position,1.); vA=uFade*clamp(1.-(-mv.z-6.)/10.,0.,1.);
+  uniforms:{uSweep:{value:0},uSize:{value:2.8*Math.min(devicePixelRatio,2)},uFade:{value:0}},
+  vertexShader:`attribute vec3 color; attribute float az; uniform float uSweep; uniform float uSize; uniform float uFade; varying vec3 vC; varying float vA; varying float h2;
+    void main(){ float d=mod(uSweep-az,6.2831853); float h=exp(-d*1.4); vC=mix(color,vec3(1.,.72,.5),h*.75); vec4 mv=modelViewMatrix*vec4(position,1.); vA=uFade*clamp(1.-(-mv.z-6.)/10.,0.,1.); h2=h;
       gl_PointSize=uSize; gl_Position=projectionMatrix*mv; }`,
-  fragmentShader:`varying vec3 vC; varying float vA; void main(){ vec2 c=gl_PointCoord-.5; if(dot(c,c)>.25) discard; gl_FragColor=vec4(vC,vA); }`});
+  fragmentShader:`varying vec3 vC; varying float vA; varying float h2; void main(){ vec2 c=gl_PointCoord-.5; if(dot(c,c)>.25) discard; gl_FragColor=vec4(vC,vA*(.75+.25*h2)); }`});
 const frustum=new THREE.LineSegments(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0xd29466,transparent:true,opacity:0,fog:false})); scene.add(frustum);
 let lidarFade=0;
 function buildLidar(){
@@ -797,15 +797,15 @@ function buildLidar(){
   frustum.geometry.setAttribute('position',new THREE.Float32BufferAttribute(fp,3));
   colorLidar();
 }
-const CLS=[new THREE.Color(0xe9e2d6),new THREE.Color(0x9a8bc0),new THREE.Color(0xe0905c)];
-const DEPTH=[new THREE.Color(0xf0b48a),new THREE.Color(0x9d86c6),new THREE.Color(0x3a3150)];
+const CLS=[new THREE.Color(0x3a3150),new THREE.Color(0x7a5fb8),new THREE.Color(0xd0743a)];
+const DEPTH=[new THREE.Color(0xc8642e),new THREE.Color(0x7a5fb8),new THREE.Color(0x2a2438)];
 function colorLidar(){
   if(!lidar) return; const c=lidar.geometry.attributes.color, {ranges,cls,fov}=lidar.userData, t=new THREE.Color();
   const night=domain==='night';
   for(let i=0;i<ranges.length;i++){
-    if(lidarMode==='raw'){ t.setHex(night?0xd8d0f0:0xf6f2fb); }
+    if(lidarMode==='raw'){ t.setHex(night?0xd8d0f0:0x2e2838); }
     else if(lidarMode==='depth'){ const u=Math.min(1,ranges[i]/8); if(u<.5) t.copy(DEPTH[0]).lerp(DEPTH[1],u*2); else t.copy(DEPTH[1]).lerp(DEPTH[2],(u-.5)*2); }
-    else { if(fov[i]) t.copy(CLS[cls[i]]); else t.setHex(0x6b6578); }
+    else { if(fov[i]) t.copy(CLS[cls[i]]); else t.setHex(night?0x4a4458:0xb9b3c6); }
     c.setXYZ(i,t.r,t.g,t.b);
   }
   c.needsUpdate=true;
@@ -924,7 +924,7 @@ document.getElementById('pkReset').addEventListener('click',()=>{ pk.stats={sim:
 
 /* ================= camera ================= */
 const HERO_CAMS={ full:{p:[2.4,1.05,2.9],t:[0,.42,0]}, head:{p:[1.55,.78,.95],t:[.55,.52,0]}, leg:{p:[1.05,.32,1.35],t:[.38,.25,.2]}, orbit:{p:[2.6,1.3,3.1],t:[0,.42,0]} };
-const CH_CAMS={1:{p:[1.05,1.2,3.7],t:[1.05,.42,0]},2:{p:[3.6,2.6,3.9],t:[.3,.35,0]},3:{p:[2.1,1.38,1.75],t:[.8,.62,0]},4:{p:[2.25,1.55,1.45],t:[.82,.58,-.05]},5:{p:[2.15,2.2,.02],t:[.92,.47,0]}};
+const CH_CAMS={1:{p:[1.05,1.2,3.7],t:[1.05,.42,0]},2:{p:[3.6,2.6,3.9],t:[.3,.35,0]},3:{p:[2.75,1.75,2.45],t:[.78,.62,0]},4:{p:[2.8,1.9,2.05],t:[.8,.58,-.05]},5:{p:[2.3,2.45,.02],t:[.9,.47,0]}};
 function camPreset(){ return chapter===0||chapter>5?HERO_CAMS[camMode]:CH_CAMS[chapter]; }
 function camTo(P,instant){
   const tgt=new THREE.Vector3(...P.t),pos=new THREE.Vector3(...P.p);
@@ -1167,7 +1167,7 @@ on('clearBtn','click',()=>{ raw=[];rec=[];ctrl=[]; document.getElementById('code
 raw=sampleCurve(); compress();
 // trail drawn on the table by the arm
 const TRAILMAX=2000,trailGeo=new THREE.BufferGeometry(); trailGeo.setAttribute('position',new THREE.Float32BufferAttribute(new Float32Array(TRAILMAX*3),3)); trailGeo.setDrawRange(0,0);
-const trail=new THREE.Line(trailGeo,new THREE.LineBasicMaterial({color:0xffa766,fog:false})); scene.add(trail); trail.visible=false;
+const trail=new THREE.Points(trailGeo,new THREE.PointsMaterial({color:0xb55a26,size:.018,fog:false})); scene.add(trail); trail.visible=false;
 let traceOn=false,traceStart=0,traceEnd=0;
 const padToTable=p=>new THREE.Vector3(.72+p[1]*.42,TABLE_Y+.006,.3-p[0]*.6);
 function clearTrail(){ trailGeo.setDrawRange(0,0); }
