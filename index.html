@@ -35,7 +35,7 @@ button{font:inherit;color:inherit}
 #gl{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:0;touch-action:none;cursor:grab}
 #gl.hover{cursor:pointer}
 .vignette{position:absolute;inset:0;z-index:1;pointer-events:none;
-  background:radial-gradient(120% 90% at 50% 55%,transparent 45%,rgba(24,20,32,.55) 100%),linear-gradient(180deg,rgba(24,20,32,.35),transparent 28%,transparent 75%,rgba(24,20,32,.4))}
+  background:radial-gradient(120% 90% at 50% 55%,transparent 45%,rgba(24,20,32,.55) 100%),linear-gradient(180deg,rgba(24,20,32,.35),transparent 28%,transparent 62%,rgba(24,20,32,.62))}
 .grain{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.12;mix-blend-mode:overlay;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
 #leaders{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
@@ -290,7 +290,7 @@ const key=new THREE.DirectionalLight(0xfff0e4,1.35); key.position.set(2.5,4.4,2.
 key.shadow.mapSize.set(2048,2048); Object.assign(key.shadow.camera,{left:-2,right:2,top:2,bottom:-2,near:.5,far:14});
 key.shadow.radius=5; key.shadow.bias=-.0004; key.shadow.normalBias=.01; scene.add(key);
 const rim=new THREE.DirectionalLight(0xe39a69,1.6); rim.position.set(-3.2,2.2,-2.4); scene.add(rim);
-const glowL=new THREE.PointLight(0xffb98e,.5,3); glowL.position.set(0,.25,0); scene.add(glowL);
+const glowL=new THREE.PointLight(0xffb98e,.25,3); glowL.position.set(0,.7,0); scene.add(glowL);
 
 /* ---------- terrain ---------- */
 function hash(x,y){ const s=Math.sin(x*127.1+y*311.7)*43758.5453; return s-Math.floor(s); }
@@ -308,7 +308,7 @@ function fbm(x,y,o){ let s=0,a=.5,f=1; for(let i=0;i<o;i++){ s+=a*vn(x*f,y*f); f
   g.computeVertexNormals();
   const t=new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:0x8a8496,roughness:1})); t.receiveShadow=true; scene.add(t);
   const c=document.createElement('canvas'); c.width=c.height=256; const x=c.getContext('2d');
-  const gr=x.createRadialGradient(128,128,0,128,128,128); gr.addColorStop(0,'rgba(255,214,186,.3)'); gr.addColorStop(.55,'rgba(230,160,120,.07)'); gr.addColorStop(1,'rgba(230,160,120,0)');
+  const gr=x.createRadialGradient(128,128,0,128,128,128); gr.addColorStop(0,'rgba(255,214,186,.14)'); gr.addColorStop(.55,'rgba(230,160,120,.04)'); gr.addColorStop(1,'rgba(230,160,120,0)');
   x.fillStyle=gr; x.fillRect(0,0,256,256);
   const d=new THREE.Mesh(new THREE.CircleGeometry(1.4,64),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}));
   d.rotation.x=-Math.PI/2; d.position.y=.035; scene.add(d);
@@ -332,11 +332,11 @@ const allMats=[], meshes=[], edgeLines=[], skel=[];
 let robot=null, links={}, joints={}, linkOfMesh=new Map();
 const skelMats={
   axis:new THREE.MeshBasicMaterial({color:0xe0905c,toneMapped:false,fog:false}),
-  node:new THREE.MeshBasicMaterial({color:0xf1ebf6,toneMapped:false,fog:false}),
-  line:new THREE.LineBasicMaterial({color:0xf1ebf6,transparent:true,opacity:.85,fog:false}),
+  node:new THREE.MeshBasicMaterial({color:0x2a2433,toneMapped:false,fog:false}),
+  line:new THREE.LineBasicMaterial({color:0x2a2433,transparent:true,opacity:.9,fog:false}),
   ax:new THREE.LineBasicMaterial({vertexColors:true,fog:false}),
 };
-const edgeMat=new THREE.LineBasicMaterial({color:0xf1ebf6,transparent:true,opacity:.35,fog:false});
+const edgeMat=new THREE.LineBasicMaterial({color:0x3b3445,transparent:true,opacity:.4,fog:false});
 function rpyQuat(r){ return new THREE.Quaternion().setFromEuler(new THREE.Euler(r[0],r[1],r[2],'ZYX')); }
 
 const manager=new THREE.LoadingManager();
@@ -382,7 +382,7 @@ async function loadRobot(){
       const cyl=new THREE.Mesh(new THREE.CylinderGeometry(.007,.007,.075,12),skelMats.axis);
       cyl.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),new THREE.Vector3(...j.axis)); jg.add(cyl); skel.push(cyl);
       const L=.045, ag=new THREE.BufferGeometry().setFromPoints([0,0,0, L,0,0, 0,0,0, 0,L,0, 0,0,0, 0,0,L].reduce((a,_,i,s)=>i%3?a:[...a,new THREE.Vector3(s[i],s[i+1],s[i+2])],[]));
-      ag.setAttribute('color',new THREE.Float32BufferAttribute([.88,.56,.36,.88,.56,.36, .95,.92,.96,.95,.92,.96, .55,.5,.65,.55,.5,.65],3));
+      ag.setAttribute('color',new THREE.Float32BufferAttribute([.82,.45,.25,.82,.45,.25, .16,.13,.2,.16,.13,.2, .45,.38,.58,.45,.38,.58],3));
       const tri=new THREE.LineSegments(ag,skelMats.ax); rot.add(tri); skel.push(tri);
     }
   });
@@ -402,8 +402,8 @@ function setMode(m,silent){
   if(robot){
     allMats.forEach(mat=>{
       const x=m==='xray', w=m==='wire';
-      mat.wireframe=w; mat.transparent=x||w; mat.opacity=x?.13:(w?.32:1); mat.depthWrite=!(x||w);
-      if(w){ mat.userData.keep=mat.userData.keep||mat.color.getHex(); mat.color.setHex(0xe9e2f2); mat.emissive.setHex(0x2a2232); }
+      mat.wireframe=w; mat.transparent=x||w; mat.opacity=x?.18:(w?.3:1); mat.depthWrite=!(x||w);
+      if(w){ mat.userData.keep=mat.userData.keep||mat.color.getHex(); mat.color.setHex(0x2f2a38); mat.emissive.setHex(0x000000); }
       else if(mat.userData.keep!==undefined){ mat.color.setHex(mat.userData.keep); mat.userData.keep=undefined; mat.emissive.setHex(mat.userData.role==='accent'?0x5a2c12:0x000000); }
       mat.needsUpdate=true;
     });
@@ -426,7 +426,7 @@ let action='idle', aStart=0;
 function poseFor(a,t,now){
   const p=base();
   if(a==='idle'){ p.z=.004*Math.sin(now*2.2); }
-  if(a==='sit'){ p.pitch=-.5; p.L.FL=[0,.7,-1.4]; p.L.FR=[0,.7,-1.4]; p.L.RL=[0,2.2,-2.7]; p.L.RR=[0,2.2,-2.7]; }
+  if(a==='sit'){ p.pitch=-.45; p.L.FL=[0,.45,-1.27]; p.L.FR=[0,.45,-1.27]; p.L.RL=[0,1.45,-2.6]; p.L.RR=[0,1.45,-2.6]; }
   if(a==='shake'){ p.pitch=-.12; p.roll=-.06;
     p.L.FR=[-.15,-.45,-1.25+.32*Math.sin(t*9)]; p.L.FL=[.05,.75,-1.45]; p.L.RL=[0,1.0,-1.9]; p.L.RR=[0,1.0,-1.9]; }
   if(a==='jump'){
@@ -514,7 +514,7 @@ function placeCallout(o,show){
   o.el.style.opacity=show?1:0; o.line.style.opacity=show?.75:0; o.cross.style.opacity=show?1:0;
   if(o.tag){ o.el.style.pointerEvents=show?'auto':'none'; o.el.tabIndex=show?0:-1; }
   if(!show) return;
-  tmpV.set(...o.off); links[o.link].localToWorld(tmpV); const a=project(tmpV);
+  tmpV.set(...o.off); links[o.link].localToWorld(tmpV); const a=project(tmpV); if(!isFinite(a.x)||!isFinite(a.y)) return;
   const k=stage.clientWidth<760?.6:1, bx=a.x+o.dx*k, by=a.y+o.dy*k;
   o.line.setAttribute('x1',a.x); o.line.setAttribute('y1',a.y); o.line.setAttribute('x2',bx); o.line.setAttribute('y2',by);
   o.cross.setAttribute('d',`M${a.x-5} ${a.y}H${a.x+5}M${a.x} ${a.y-5}V${a.y+5}`);
@@ -577,10 +577,10 @@ function updateRobot(dt){
   LEGS.forEach(l=>{ const q=cur.L[l],s=SIDE[l];
     setQ(l+'_hip_joint',q[0]*s); setQ(l+'_thigh_joint',q[1]); setQ(l+'_calf_joint',q[2]);
     const hip=joints[l+'_hip_joint'],th=joints[l+'_thigh_joint'],ca=joints[l+'_calf_joint'],ft=joints[l+'_foot_joint'];
-    hip.g.position.copy(hip.g.userData.origin).multiply(tmpV.set(1+.45*e,1,1)).add(tmpW.set(0,s*.07*e,0));
-    th.g.position.copy(th.g.userData.origin).multiplyScalar(1+1.4*e);
-    ca.g.position.copy(ca.g.userData.origin).multiplyScalar(1+.45*e);
-    ft.g.position.copy(ft.g.userData.origin).multiplyScalar(1+.6*e);
+    hip.g.position.copy(hip.g.userData.origin).multiply(tmpV.set(1+.2*e,1,1)).add(tmpW.set(0,s*.09*e,0));
+    th.g.position.copy(th.g.userData.origin).multiplyScalar(1+1.6*e);
+    ca.g.position.copy(ca.g.userData.origin).multiplyScalar(1+.25*e);
+    ft.g.position.copy(ft.g.userData.origin).multiplyScalar(1+.35*e);
   });
   const b=links.base;
   b.rotation.set(cur.roll,cur.pitch+look.pitch,cur.yaw+look.yaw,'ZYX');
@@ -588,7 +588,8 @@ function updateRobot(dt){
   // keep the lowest foot on the ground, then add the pose's own lift
   robotRoot.position.y=0; robotRoot.updateMatrixWorld(true);
   let minY=Infinity; LEGS.forEach(l=>{ links[l+'_foot'].getWorldPosition(tmpW); minY=Math.min(minY,tmpW.y); });
-  robotRoot.position.y=FOOT_R*S-minY+(cur.z+.12*e)*S;
+  robotRoot.position.y=FOOT_R*S-minY+(cur.z+.04*e)*S;
+  if(!tween){ const want=PRESETS[camMode].t[1]+.32*e; controls.target.y+=(want-controls.target.y)*(1-Math.exp(-dt*4)); }
 }
 
 function frame(now){
