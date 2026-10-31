@@ -3,14 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Yue Cao — robotics. Interactive 3D robot dog homepage.">
+<meta name="description" content="Yue Cao — robotics. Interactive Unitree Go2 loaded from its URDF.">
 <title>Yue Cao</title>
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: fog-filled valley stage, robot dog at centre, UI tucked into the four corners like an instrument readout; part-indexed cards below. */
+/* Layout: fog-filled valley stage with a Unitree Go2 loaded from its URDF; UI tucked into the four corners like an instrument readout; link-indexed cards below. */
 :root{
   --fog:#8e889c;
   --bg:#17151c;
@@ -40,16 +39,22 @@ button{font:inherit;color:inherit}
 .grain{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.12;mix-blend-mode:overlay;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
 #leaders{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
-#leaders line{stroke:var(--ink);stroke-width:1;opacity:.75}
-#leaders path{stroke:var(--ink);stroke-width:1;fill:none}
-.co{position:absolute;left:0;top:0;z-index:2;font-family:var(--font-mono);font-size:11.5px;letter-spacing:.04em;color:var(--ink);
+#leaders line{stroke:var(--ink);stroke-width:1;transition:opacity .35s}
+#leaders path{stroke:var(--ink);stroke-width:1;fill:none;transition:opacity .35s}
+.co{position:absolute;left:0;top:0;z-index:2;font-family:var(--font-mono);font-size:11.5px;letter-spacing:.03em;color:var(--ink);
   white-space:nowrap;pointer-events:none;text-shadow:0 1px 8px rgba(20,16,28,.6);font-variant-numeric:tabular-nums;transition:opacity .35s}
-.co.tag{pointer-events:auto;cursor:pointer;border:0;background:rgba(23,21,28,.72);padding:6px 10px 6px 8px;border-radius:3px;display:flex;gap:8px;align-items:baseline;text-shadow:none}
+.co .k{opacity:.65}
+.co.tag{pointer-events:auto;cursor:pointer;border:0;background:rgba(23,21,28,.74);padding:6px 10px 6px 8px;border-radius:3px;display:flex;gap:8px;align-items:baseline;text-shadow:none}
 .co.tag:hover{background:rgba(23,21,28,.92)}
 .co.tag .no{color:var(--copper)}
 .co.tag .zh{font-family:var(--font-body);font-weight:700;font-size:13px;letter-spacing:0}
 .hint{position:absolute;left:0;top:0;z-index:3;pointer-events:none;font-family:var(--font-mono);font-size:11.5px;letter-spacing:.06em;
-  color:var(--bg);background:var(--copper);padding:5px 9px;border-radius:2px;white-space:nowrap;transition:opacity .4s}
+  color:var(--bg);background:var(--copper);padding:5px 9px;border-radius:2px;white-space:nowrap;transition:opacity .4s;opacity:0}
+.loader{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3;font-family:var(--font-mono);font-size:12px;letter-spacing:.06em;color:var(--ink);text-align:center;
+  text-shadow:0 1px 10px rgba(20,16,28,.5);transition:opacity .5s;max-width:min(420px,calc(100% - 40px))}
+.loader .bar{width:180px;height:1px;background:rgba(239,235,243,.25);margin:10px auto 0;position:relative;overflow:hidden}
+.loader .bar i{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--copper);transition:width .2s}
+.loader code{display:block;margin-top:10px;color:var(--copper);user-select:all}
 
 .ui{position:absolute;inset:0;z-index:3;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;
   padding-block:28px 24px;padding-left:max(28px,env(safe-area-inset-left,0px));padding-right:max(28px,env(safe-area-inset-right,0px));
@@ -59,7 +64,6 @@ button{font:inherit;color:inherit}
 .row2 > *{pointer-events:auto}
 .ident{max-width:30rem}
 .lbl{font-family:var(--font-mono);font-size:12px;letter-spacing:.06em;color:var(--muted);margin-bottom:8px}
-.lbl b{color:var(--copper);font-weight:400}
 h1{font-family:var(--font-display);font-weight:700;font-size:clamp(32px,4.6vw,58px);line-height:1.04;margin:0 0 12px;letter-spacing:-.01em;text-wrap:balance}
 .tagline{margin:0;font-family:var(--font-mono);font-size:13px;line-height:1.7;color:var(--ink);opacity:.85;max-width:24rem}
 
@@ -95,8 +99,8 @@ h2{font-family:var(--font-display);font-weight:500;font-size:clamp(22px,2.4vw,30
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line)}
 .card{min-width:0;padding:26px 26px 24px;background:var(--bg);display:flex;flex-direction:column;gap:16px;transition:background .25s}
 .card:hover{background:var(--surface)}
-.card-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.unit{font-family:var(--font-mono);font-size:12px;letter-spacing:.06em;color:var(--muted)}
+.card-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.unit{font-family:var(--font-mono);font-size:12px;letter-spacing:.04em;color:var(--muted)}
 .unit b{color:var(--copper);font-weight:400}
 .card h3{font-family:var(--font-display);font-weight:500;font-size:19px;margin:0}
 .card p{margin:0;color:#d9d4e0}
@@ -104,21 +108,15 @@ h2{font-family:var(--font-display);font-weight:500;font-size:clamp(22px,2.4vw,30
 .locate:hover{color:var(--copper)}
 .chips{display:flex;flex-wrap:wrap;gap:8px;padding:0;margin:0;list-style:none}
 .chips li{font-family:var(--font-mono);font-size:12.5px;padding:4px 10px;border:1px solid rgba(210,148,102,.4);border-radius:2px}
-.proj{list-style:none;padding:0;margin:0;display:flex;flex-direction:column}
-.proj li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 16px;padding:12px 0;border-top:1px solid var(--line)}
-.proj li:first-child{border-top:0;padding-top:0}
-.proj .yr{font-family:var(--font-mono);font-size:12px;color:var(--copper);padding-top:3px;font-variant-numeric:tabular-nums}
-.proj strong{font-weight:700}
-.proj span.d{grid-column:2;color:#c6c0cf;font-size:14px}
 .contact{display:flex;flex-direction:column;gap:10px}
 .kv{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .kv .k{font-family:var(--font-mono);font-size:12px;color:var(--muted);width:60px}
 .kv .v{font-family:var(--font-mono);font-size:14px;user-select:all;overflow-wrap:anywhere}
-.kv a{color:var(--copper);font-family:var(--font-mono);font-size:14px;text-decoration:none;border-bottom:1px solid rgba(210,148,102,.4)}
 .copy{border:1px solid var(--line);background:transparent;border-radius:2px;padding:2px 9px;font-family:var(--font-mono);font-size:11.5px;cursor:pointer;color:var(--muted)}
 .copy:hover{color:var(--copper);border-color:var(--copper)}
 footer{max-width:1120px;margin:44px auto 0;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
   font-family:var(--font-mono);font-size:12px;color:var(--muted)}
+footer a{color:var(--muted)}
 
 @media (max-width:760px){
   .stage{height:clamp(660px,94vh,820px)}
@@ -141,18 +139,19 @@ footer{max-width:1120px;margin:44px auto 0;display:flex;justify-content:space-be
 <style>body{margin:0} img{max-width:100%} [hidden]{display:none!important}</style>
 </head>
 <body>
-<section class="stage" id="stage" aria-label="可交互的 3D 机器狗">
+<section class="stage" id="stage" aria-label="可交互的 3D 机器狗 Unitree Go2">
   <canvas id="gl"></canvas>
   <div class="vignette" aria-hidden="true"></div>
   <div class="grain" aria-hidden="true"></div>
   <svg id="leaders" aria-hidden="true"></svg>
   <div id="callouts"></div>
   <div class="hint" id="hint">// 点一下我</div>
+  <div class="loader" id="loader">// LOADING GO2 · URDF + 7 MESHES<div class="bar"><i id="bar"></i></div></div>
 
   <div class="ui">
     <div class="row2">
       <div class="ident">
-        <div class="lbl">// UNIT 01 · LEGGED ROBOTICS</div>
+        <div class="lbl">// UNITREE GO2 · 12 DOF · LEGGED ROBOTICS</div>
         <h1>Yue Cao</h1>
         <p class="tagline">我做会走路的机器。<br>拖动旋转，点击机器狗让它动起来。</p>
       </div>
@@ -160,9 +159,9 @@ footer{max-width:1120px;margin:44px auto 0;display:flex;justify-content:space-be
         <div class="lbl">////// 视图</div>
         <div class="opts v" role="group" aria-label="视图" id="modes">
           <button class="opt" data-mode="exterior" aria-pressed="true"><span class="zh">外壳</span><span class="en">EXTERIOR</span></button>
-          <button class="opt" data-mode="clear" aria-pressed="false"><span class="zh">透明</span><span class="en">CLEAR SHELL</span></button>
-          <button class="opt" data-mode="shelloff" aria-pressed="false"><span class="zh">去壳</span><span class="en">SHELL OFF</span></button>
-          <button class="opt" data-mode="wiring" aria-pressed="false"><span class="zh">线路</span><span class="en">WIRING</span></button>
+          <button class="opt" data-mode="xray" aria-pressed="false"><span class="zh">透明</span><span class="en">X-RAY</span></button>
+          <button class="opt" data-mode="wire" aria-pressed="false"><span class="zh">线框</span><span class="en">WIREFRAME</span></button>
+          <button class="opt" data-mode="kin" aria-pressed="false"><span class="zh">骨架</span><span class="en">KINEMATICS</span></button>
           <button class="opt" data-mode="exploded" aria-pressed="false"><span class="zh">爆炸</span><span class="en">EXPLODED</span></button>
         </div>
       </div>
@@ -176,7 +175,7 @@ footer{max-width:1120px;margin:44px auto 0;display:flex;justify-content:space-be
           <button class="opt" data-act="sit" aria-pressed="false"><span class="zh">坐下</span></button>
           <button class="opt" data-act="shake" aria-pressed="false"><span class="zh">握手</span></button>
           <button class="opt" data-act="jump" aria-pressed="false"><span class="zh">跳跃</span></button>
-          <button class="opt" data-act="wag" aria-pressed="false"><span class="zh">摇尾巴</span></button>
+          <button class="opt" data-act="stretch" aria-pressed="false"><span class="zh">伸懒腰</span></button>
           <button class="opt" data-act="trot" aria-pressed="false"><span class="zh">小跑</span></button>
         </div>
       </div>
@@ -207,43 +206,43 @@ footer{max-width:1120px;margin:44px auto 0;display:flex;justify-content:space-be
   <div class="wrap">
     <div class="sec-head">
       <div>
-        <div class="lbl">////// PARTS LIST · 4 UNITS</div>
+        <div class="lbl">////// LINK LIST · 4 UNITS</div>
         <h2>拆开这只狗，就是我</h2>
       </div>
       <span class="note">// 技能和项目持续更新中</span>
     </div>
 
     <div class="grid">
-      <article class="card" id="card-head">
-        <div class="card-top"><span class="unit"><b>U-01</b> · HEAD · SENSORS</span><button class="locate" data-part="head">在机器狗上查看 ↗</button></div>
+      <article class="card" id="card-base">
+        <div class="card-top"><span class="unit"><b>U-01</b> · base · TRUNK + SENSORS</span><button class="locate" data-part="base">在机器狗上查看 ↗</button></div>
         <div class="body">
-          <h3 id="t-head">关于我</h3>
+          <h3 id="t-base">关于我</h3>
           <p style="margin-top:10px">你好，我是 Yue Cao，做机器人方向，关注机器狗和机械臂。我喜欢把仿真里训练出来的策略搬到真机上，看它第一次自己站起来。</p>
         </div>
       </article>
 
-      <article class="card" id="card-legs">
-        <div class="card-top"><span class="unit"><b>U-02</b> · ACTUATORS · 12 DOF</span><button class="locate" data-part="legs">在机器狗上查看 ↗</button></div>
+      <article class="card" id="card-hip">
+        <div class="card-top"><span class="unit"><b>U-02</b> · *_hip · ACTUATORS</span><button class="locate" data-part="hip">在机器狗上查看 ↗</button></div>
         <div class="body">
-          <h3 id="t-legs">技能</h3>
+          <h3 id="t-hip">技能</h3>
           <ul class="chips" style="margin-top:14px">
             <li>ROS 2</li><li>MuJoCo</li><li>Isaac Lab</li><li>强化学习 · PPO</li><li>MPC / WBC</li><li>C++ · Python</li><li>PyTorch</li><li>URDF · CAD</li>
           </ul>
         </div>
       </article>
 
-      <article class="card" id="card-board">
-        <div class="card-top"><span class="unit"><b>U-03</b> · MAIN BOARD</span><button class="locate" data-part="board">在机器狗上查看 ↗</button></div>
+      <article class="card" id="card-thigh">
+        <div class="card-top"><span class="unit"><b>U-03</b> · *_thigh · *_calf</span><button class="locate" data-part="thigh">在机器狗上查看 ↗</button></div>
         <div class="body">
-          <h3 id="t-board">项目</h3>
+          <h3 id="t-thigh">项目</h3>
           <p style="margin-top:10px;color:var(--muted);font-family:var(--font-mono);font-size:13px">// 正在整理，很快上线。</p>
         </div>
       </article>
 
-      <article class="card" id="card-battery">
-        <div class="card-top"><span class="unit"><b>U-04</b> · POWER CELL</span><button class="locate" data-part="battery">在机器狗上查看 ↗</button></div>
+      <article class="card" id="card-foot">
+        <div class="card-top"><span class="unit"><b>U-04</b> · *_foot · CONTACT</span><button class="locate" data-part="foot">在机器狗上查看 ↗</button></div>
         <div class="body">
-          <h3 id="t-battery">联系</h3>
+          <h3 id="t-foot">联系</h3>
           <div class="contact" style="margin-top:14px">
             <div class="kv"><span class="k">EMAIL</span><span class="v">caoyuecora@gmail.com</span><button class="copy">复制</button></div>
           </div>
@@ -251,51 +250,47 @@ footer{max-width:1120px;margin:44px auto 0;display:flex;justify-content:space-be
       </article>
     </div>
   </div>
-  <footer><span>// UNIT 01 · BUILT WITH THREE.JS</span><span>© 2026 Yue Cao</span></footer>
+  <footer><span>© 2026 Yue Cao</span><span>Go2 model · <a href="https://github.com/unitreerobotics/unitree_ros" target="_blank" rel="noopener">Unitree Robotics</a> (BSD-3)</span></footer>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/geometries/RoundedBoxGeometry.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/GLTFLoader.js"></script>
 <script>
 (function(){
-const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const stage = document.getElementById('stage');
-const canvas = document.getElementById('gl');
-const RBox = (w,h,d,s,r)=> THREE.RoundedBoxGeometry ? new THREE.RoundedBoxGeometry(w,h,d,s,r) : new THREE.BoxGeometry(w,h,d);
-const FOG = 0x8e889c;
+const ASSETS='assets/go2/web/';
+const S=2.0;                       // scene units per metre
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const stage=document.getElementById('stage'), canvas=document.getElementById('gl');
+const FOG=0x8e889c;
 
 /* ---------- renderer / scene ---------- */
-const renderer = new THREE.WebGLRenderer({canvas,antialias:true});
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
-renderer.outputEncoding = THREE.sRGBEncoding;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.0;
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputEncoding=THREE.sRGBEncoding;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.setClearColor(FOG);
-const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(FOG,.06);
-const camera = new THREE.PerspectiveCamera(30,1,.1,140);
-const controls = new THREE.OrbitControls(camera,canvas);
-controls.enableDamping=true; controls.enablePan=false; controls.minDistance=1.4; controls.maxDistance=8;
+const scene=new THREE.Scene();
+scene.fog=new THREE.FogExp2(FOG,.06);
+const camera=new THREE.PerspectiveCamera(30,1,.05,140);
+const controls=new THREE.OrbitControls(camera,canvas);
+controls.enableDamping=true; controls.enablePan=false; controls.minDistance=1.2; controls.maxDistance=8;
 controls.maxPolarAngle=Math.PI*.49; controls.autoRotateSpeed=1.0;
 
-// sky dome
-scene.add(new THREE.Mesh(new THREE.SphereGeometry(80,32,16), new THREE.ShaderMaterial({
-  side:THREE.BackSide, depthWrite:false, fog:false,
+scene.add(new THREE.Mesh(new THREE.SphereGeometry(80,32,16),new THREE.ShaderMaterial({
+  side:THREE.BackSide,depthWrite:false,fog:false,
   uniforms:{top:{value:new THREE.Color(0x4c4760)},hor:{value:new THREE.Color(0xa59fb3)}},
   vertexShader:'varying vec3 p; void main(){ p=normalize(position); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }',
   fragmentShader:'uniform vec3 top; uniform vec3 hor; varying vec3 p; void main(){ float t=smoothstep(-.05,.6,p.y); gl_FragColor=vec4(mix(hor,top,t),1.); }'
 })));
-
-// lights: cool lavender ambience, warm key, copper rim
 scene.add(new THREE.HemisphereLight(0xcfc8e2,0x6a6377,.85));
-const key = new THREE.DirectionalLight(0xfff0e4,1.35); key.position.set(2.5,4.4,2.4); key.castShadow=true;
-key.shadow.mapSize.set(1024,1024); Object.assign(key.shadow.camera,{left:-2.4,right:2.4,top:2.4,bottom:-2.4,near:.5,far:14});
-key.shadow.radius=6; key.shadow.bias=-.0006; scene.add(key);
-const rim = new THREE.DirectionalLight(0xe39a69,1.5); rim.position.set(-3.2,2.2,-2.4); scene.add(rim);
-const glowL = new THREE.PointLight(0xffb98e,.55,3.2); glowL.position.set(0,.25,0); scene.add(glowL);
+const key=new THREE.DirectionalLight(0xfff0e4,1.35); key.position.set(2.5,4.4,2.4); key.castShadow=true;
+key.shadow.mapSize.set(2048,2048); Object.assign(key.shadow.camera,{left:-2,right:2,top:2,bottom:-2,near:.5,far:14});
+key.shadow.radius=5; key.shadow.bias=-.0004; key.shadow.normalBias=.01; scene.add(key);
+const rim=new THREE.DirectionalLight(0xe39a69,1.6); rim.position.set(-3.2,2.2,-2.4); scene.add(rim);
+const glowL=new THREE.PointLight(0xffb98e,.5,3); glowL.position.set(0,.25,0); scene.add(glowL);
 
 /* ---------- terrain ---------- */
 function hash(x,y){ const s=Math.sin(x*127.1+y*311.7)*43758.5453; return s-Math.floor(s); }
@@ -306,287 +301,229 @@ function fbm(x,y,o){ let s=0,a=.5,f=1; for(let i=0;i<o;i++){ s+=a*vn(x*f,y*f); f
   const g=new THREE.PlaneGeometry(110,110,240,240); g.rotateX(-Math.PI/2);
   const pos=g.attributes.position;
   for(let i=0;i<pos.count;i++){
-    const x=pos.getX(i), z=pos.getZ(i), r=Math.hypot(x,z);
-    const m=THREE.MathUtils.smoothstep(r,2.4,13);
-    const big=(fbm(x*.07+3,z*.07-1,5)-.35)*15*m;
-    const ridge=Math.pow(Math.abs(fbm(x*.16,z*.16,4)-.5)*2,1.5)*3*m;
-    const fine=(fbm(x*1.3,z*1.3,3)-.5)*.05;
-    pos.setY(i, Math.max(-.2,big+ridge)+fine-.01);
+    const x=pos.getX(i),z=pos.getZ(i),r=Math.hypot(x,z),m=THREE.MathUtils.smoothstep(r,2.4,13);
+    const big=(fbm(x*.07+3,z*.07-1,5)-.35)*15*m, ridge=Math.pow(Math.abs(fbm(x*.16,z*.16,4)-.5)*2,1.5)*3*m, fine=(fbm(x*1.3,z*1.3,3)-.5)*.04;
+    pos.setY(i,Math.max(-.2,big+ridge)+fine-.01);
   }
   g.computeVertexNormals();
-  const t=new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:0x8a8496,roughness:1,metalness:0}));
-  t.receiveShadow=true; scene.add(t);
-})();
-(function(){ // warm pool of light under the robot
+  const t=new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:0x8a8496,roughness:1})); t.receiveShadow=true; scene.add(t);
   const c=document.createElement('canvas'); c.width=c.height=256; const x=c.getContext('2d');
-  const gr=x.createRadialGradient(128,128,0,128,128,128); gr.addColorStop(0,'rgba(255,214,186,.32)'); gr.addColorStop(.55,'rgba(230,160,120,.08)'); gr.addColorStop(1,'rgba(230,160,120,0)');
+  const gr=x.createRadialGradient(128,128,0,128,128,128); gr.addColorStop(0,'rgba(255,214,186,.3)'); gr.addColorStop(.55,'rgba(230,160,120,.07)'); gr.addColorStop(1,'rgba(230,160,120,0)');
   x.fillStyle=gr; x.fillRect(0,0,256,256);
-  const m=new THREE.Mesh(new THREE.CircleGeometry(1.5,64), new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}));
-  m.rotation.x=-Math.PI/2; m.position.y=.04; scene.add(m);
+  const d=new THREE.Mesh(new THREE.CircleGeometry(1.4,64),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}));
+  d.rotation.x=-Math.PI/2; d.position.y=.035; scene.add(d);
 })();
-
-// drifting snow dust
-const DUST=700, dpos=new Float32Array(DUST*3), dsp=[];
+const DUST=700,dpos=new Float32Array(DUST*3),dsp=[];
 for(let i=0;i<DUST;i++){ dpos[i*3]=(Math.random()-.5)*14; dpos[i*3+1]=Math.random()*5; dpos[i*3+2]=(Math.random()-.5)*14; dsp.push(.05+Math.random()*.12); }
 const dgeo=new THREE.BufferGeometry(); dgeo.setAttribute('position',new THREE.BufferAttribute(dpos,3));
-const dust=new THREE.Points(dgeo,new THREE.PointsMaterial({color:0xf3eef8,size:.022,transparent:true,opacity:.7,depthWrite:false}));
-scene.add(dust);
+scene.add(new THREE.Points(dgeo,new THREE.PointsMaterial({color:0xf3eef8,size:.022,transparent:true,opacity:.7,depthWrite:false})));
 
-/* ---------- materials by role ---------- */
-const FIN = {graphite:[0x3b3642,.38,.35],copper:[0xb8734f,.3,.85],mauve:[0x7f7392,.42,.2],bone:[0xd9d4de,.5,.05]};
-const roleMats = {shells:[],inner:[],joints:[],wires:[]};
-function M(role,p,finish){ const m=new THREE.MeshStandardMaterial(p); m.userData.finish=!!finish; roleMats[role].push(m); return m; }
-function shellMat(){ const f=FIN.graphite; return M('shells',{color:f[0],roughness:f[1],metalness:f[2]},true); }
-const J = {
-  dark: M('joints',{color:0x221f27,roughness:.45,metalness:.6}),
-  cu:   M('joints',{color:0xc27f55,roughness:.28,metalness:.95}),
-  rub:  M('joints',{color:0x17151a,roughness:.95}),
-  face: M('joints',{color:0x0b0a0e,roughness:.08,metalness:.6}),
-  eye:  M('joints',{color:0x000000,emissive:0xffc39c,emissiveIntensity:2.4}),
-  tip:  M('joints',{color:0x000000,emissive:0xff9a5e,emissiveIntensity:2.2}),
+/* ---------- robot (built from the URDF tree in go2.json) ---------- */
+const FIN={graphite:[0x3b3642,.38,.35],copper:[0xb8734f,.3,.85],mauve:[0x7f7392,.42,.2],bone:[0xd9d4de,.5,.05]};
+function roleOf(name){ if(/logo/i.test(name)) return 'accent'; if(/足端/.test(name)) return 'rubber'; if(/黑色/.test(name)) return 'dark'; return 'shell'; }
+const BASEMAT={
+  shell:()=>new THREE.MeshStandardMaterial({color:FIN.graphite[0],roughness:FIN.graphite[1],metalness:FIN.graphite[2]}),
+  dark:()=>new THREE.MeshStandardMaterial({color:0x17151b,roughness:.4,metalness:.55}),
+  rubber:()=>new THREE.MeshStandardMaterial({color:0x121115,roughness:.95}),
+  accent:()=>new THREE.MeshStandardMaterial({color:0xc27f55,roughness:.28,metalness:.95,emissive:0x5a2c12,emissiveIntensity:.35}),
 };
-const I = {
-  alu:  M('inner',{color:0x9b96a6,roughness:.3,metalness:.9}),
-  pcb:  M('inner',{color:0x2a2633,roughness:.5,metalness:.3,emissive:0x3a2418,emissiveIntensity:.4}),
-  chip: M('inner',{color:0x141218,roughness:.35,metalness:.4}),
-  gold: M('inner',{color:0xd29466,roughness:.25,metalness:1}),
-  batt: M('inner',{color:0x8c7fa3,roughness:.45,metalness:.2}),
-  cam:  M('inner',{color:0x1d1a22,roughness:.3,metalness:.5}),
+const robotRoot=new THREE.Group(); robotRoot.scale.setScalar(S); robotRoot.rotation.x=-Math.PI/2; scene.add(robotRoot);
+const allMats=[], meshes=[], edgeLines=[], skel=[];
+let robot=null, links={}, joints={}, linkOfMesh=new Map();
+const skelMats={
+  axis:new THREE.MeshBasicMaterial({color:0xe0905c,toneMapped:false,fog:false}),
+  node:new THREE.MeshBasicMaterial({color:0xf1ebf6,toneMapped:false,fog:false}),
+  line:new THREE.LineBasicMaterial({color:0xf1ebf6,transparent:true,opacity:.85,fog:false}),
+  ax:new THREE.LineBasicMaterial({vertexColors:true,fog:false}),
 };
-const edgeMat = new THREE.LineBasicMaterial({color:0xf1ebf6,transparent:true,opacity:.6});
+const edgeMat=new THREE.LineBasicMaterial({color:0xf1ebf6,transparent:true,opacity:.35,fog:false});
+function rpyQuat(r){ return new THREE.Quaternion().setFromEuler(new THREE.Euler(r[0],r[1],r[2],'ZYX')); }
 
-const pickables=[], edges=[], explodables=[];
-function add(parent,geo,mat,role,pos,rot){
-  const m=new THREE.Mesh(geo,mat); if(pos) m.position.set(...pos); if(rot) m.rotation.set(...rot);
-  m.castShadow=true; m.receiveShadow=true; m.userData.role=role; parent.add(m); pickables.push(m);
-  if(role==='shells'){ const e=new THREE.LineSegments(new THREE.EdgesGeometry(geo,28),edgeMat); e.visible=false; m.add(e); edges.push(e); }
-  return m;
-}
-function grp(parent,pos,ex){ const g=new THREE.Group(); g.position.set(...pos); g.userData.base=g.position.clone(); g.userData.ex=new THREE.Vector3(...(ex||[0,0,0])); parent.add(g); if(ex) explodables.push(g); return g; }
+const manager=new THREE.LoadingManager();
+const bar=document.getElementById('bar'), loaderEl=document.getElementById('loader');
+manager.onProgress=(u,l,t)=>{ bar.style.width=(l/t*100)+'%'; };
+const gltfLoader=new THREE.GLTFLoader(manager);
 
-/* ---------- build the dog ---------- */
-const dog = new THREE.Group(); scene.add(dog);
-const BASE_Y=.64;
-const torso = new THREE.Group(); torso.position.y=BASE_Y; dog.add(torso);
-
-const frameG = grp(torso,[0,0,0]);
-add(frameG,new THREE.BoxGeometry(1.0,.1,.26),I.alu,'inner',[0,-.03,0]);
-add(frameG,new THREE.BoxGeometry(1.04,.03,.03),I.alu,'inner',[0,.05,.11]);
-add(frameG,new THREE.BoxGeometry(1.04,.03,.03),I.alu,'inner',[0,.05,-.11]);
-
-const boardG = grp(torso,[.02,.085,0],[0,.46,0]);
-add(boardG,new THREE.BoxGeometry(.52,.018,.24),I.pcb,'inner');
-add(boardG,new THREE.BoxGeometry(.11,.022,.11),I.chip,'inner',[.08,.02,0]);
-add(boardG,new THREE.BoxGeometry(.05,.004,.05),I.gold,'inner',[.08,.033,0]);
-[[-.12,.07],[-.12,-.07],[-.03,.08],[-.03,-.08],[.2,.07],[.2,-.07]].forEach(([x,z])=>add(boardG,new THREE.BoxGeometry(.05,.016,.035),I.chip,'inner',[x,.016,z]));
-add(boardG,new THREE.CylinderGeometry(.045,.045,.02,24),I.chip,'inner',[-.17,.02,0]);
-
-const battG = grp(torso,[-.04,-.075,0],[-.98,-.06,0]);
-add(battG,RBox(.46,.085,.2,2,.02),I.batt,'inner');
-add(battG,new THREE.BoxGeometry(.3,.088,.04),I.chip,'inner',[.02,0,0]);
-add(battG,new THREE.BoxGeometry(.04,.04,.12),I.gold,'inner',[.245,0,0]);
-
-const shellG = grp(torso,[0,0,0],[0,.68,0]);
-add(shellG,RBox(1.2,.3,.44,4,.09),shellMat(),'shells');
-add(shellG,new THREE.BoxGeometry(.5,.014,.16),J.dark,'joints',[-.08,.152,0]);
-add(shellG,new THREE.BoxGeometry(.04,.016,.16),J.cu,'joints',[.2,.153,0]);
-add(shellG,new THREE.BoxGeometry(.12,.04,.012),J.dark,'joints',[.36,0,.222]);
-add(shellG,new THREE.BoxGeometry(.12,.04,.012),J.dark,'joints',[.36,0,-.222]);
-
-const headG = grp(torso,[.64,.05,0],[.46,.16,0]);
-const headPivot = new THREE.Group(); headPivot.rotation.order='YZX'; headG.add(headPivot);
-add(headPivot,RBox(.26,.2,.32,3,.06),shellMat(),'shells',[.07,0,0]);
-add(headPivot,RBox(.025,.13,.27,2,.012),J.face,'joints',[.195,0,0]);
-add(headPivot,new THREE.CircleGeometry(.024,24),J.eye,'joints',[.209,.02,.065],[0,Math.PI/2,0]);
-add(headPivot,new THREE.CircleGeometry(.024,24),J.eye,'joints',[.209,.02,-.065],[0,Math.PI/2,0]);
-add(headPivot,new THREE.BoxGeometry(.006,.008,.1),J.eye,'joints',[.209,-.035,0]);
-add(headPivot,new THREE.CylinderGeometry(.05,.056,.05,28),J.dark,'joints',[.03,.125,0]);
-add(headPivot,new THREE.TorusGeometry(.05,.005,8,32),J.cu,'joints',[.03,.14,0],[Math.PI/2,0,0]);
-add(headPivot,new THREE.BoxGeometry(.08,.07,.2),I.cam,'inner',[.12,0,0]);
-add(headPivot,new THREE.CylinderGeometry(.025,.025,.03,16),I.chip,'inner',[.165,0,.06],[0,0,Math.PI/2]);
-add(headPivot,new THREE.CylinderGeometry(.025,.025,.03,16),I.chip,'inner',[.165,0,-.06],[0,0,Math.PI/2]);
-
-const tailG = grp(torso,[-.6,.1,0],[-.34,.26,0]);
-const tailPivot = new THREE.Group(); tailG.add(tailPivot);
-add(tailPivot,new THREE.CylinderGeometry(.03,.034,.04,20),J.cu,'joints');
-add(tailPivot,new THREE.CapsuleGeometry(.011,.2,4,8),J.dark,'joints',[-.06,.11,0],[0,0,.55]);
-add(tailPivot,new THREE.SphereGeometry(.02,16,12),J.tip,'joints',[-.12,.21,0]);
-
-const legs={};
-[['FL',.42,1],['FR',.42,-1],['RL',-.42,1],['RR',-.42,-1]].forEach(([k,x,s])=>{
-  const legG = grp(torso,[x,-.07,.24*s],[x>0?.2:-.2,-.04,.4*s]);
-  add(legG,new THREE.CylinderGeometry(.062,.062,.12,28),J.dark,'joints',[0,0,0],[0,0,Math.PI/2]);
-  add(legG,new THREE.CylinderGeometry(.03,.03,.124,16),J.cu,'joints',[0,0,0],[0,0,Math.PI/2]);
-  const abd=new THREE.Group(); legG.add(abd);
-  const hip=new THREE.Group(); hip.position.set(0,0,.065*s); abd.add(hip);
-  add(hip,new THREE.CylinderGeometry(.068,.068,.075,28),J.dark,'joints',[0,0,0],[Math.PI/2,0,0]);
-  add(hip,new THREE.CylinderGeometry(.034,.034,.08,20),J.cu,'joints',[0,0,.002*s],[Math.PI/2,0,0]);
-  add(hip,new THREE.CapsuleGeometry(.052,.22,6,16),shellMat(),'shells',[0,-.17,0]);
-  add(hip,new THREE.BoxGeometry(.03,.3,.03),I.alu,'inner',[0,-.17,0]);
-  add(hip,new THREE.CylinderGeometry(.01,.01,.3,8),I.gold,'inner',[.025,-.17,0]);
-  const knee=new THREE.Group(); knee.position.set(0,-.34,0); hip.add(knee);
-  add(knee,new THREE.CylinderGeometry(.04,.04,.07,24),J.dark,'joints',[0,0,0],[Math.PI/2,0,0]);
-  add(knee,new THREE.CylinderGeometry(.018,.018,.074,16),J.cu,'joints',[0,0,0],[Math.PI/2,0,0]);
-  add(knee,new THREE.CapsuleGeometry(.024,.27,4,12),J.dark,'joints',[0,-.17,0]);
-  add(knee,new THREE.SphereGeometry(.042,20,14),J.rub,'joints',[0,-.34,0]);
-  legs[k]={g:legG,abd,hip,knee,s};
-});
-
-const wires=[];
-[
-  [[.02,.1,0],[.25,.12,.12],[.42,-.0,.2],[.42,-.06,.26]],
-  [[.02,.1,0],[.25,.12,-.12],[.42,-.0,-.2],[.42,-.06,-.26]],
-  [[.02,.1,0],[-.22,.12,.12],[-.42,-.0,.2],[-.42,-.06,.26]],
-  [[.02,.1,0],[-.22,.12,-.12],[-.42,-.0,-.2],[-.42,-.06,-.26]],
-  [[.1,.1,0],[.35,.14,.03],[.55,.08,0],[.66,.05,0]],
-  [[-.15,.08,0],[-.1,-.02,.05],[-.05,-.06,0]],
-].forEach(pts=>{
-  [0,1].forEach(j=>{
-    const off=(j-.5)*.022;
-    const curve=new THREE.CatmullRomCurve3(pts.map(p=>new THREE.Vector3(p[0],p[1]+off*.5,p[2]+off)));
-    const col = j? 0xc9b8e6:0xe0905c;
-    const mat = M('wires',{color:col,roughness:.4,emissive:col,emissiveIntensity:.3});
-    const mesh=new THREE.Mesh(new THREE.TubeGeometry(curve,48,.0065,6),mat); torso.add(mesh);
-    const pk=new THREE.Mesh(new THREE.SphereGeometry(.013,10,8),new THREE.MeshBasicMaterial({color:j?0xf2eaff:0xffc6a0,toneMapped:false,fog:false}));
-    torso.add(pk);
-    wires.push({curve,mesh,pk,speed:.3+Math.random()*.25,off:Math.random()});
+async function loadRobot(){
+  const desc=await (await fetch(ASSETS+'go2.json')).json();
+  const names=[...new Set(Object.values(desc.links).flat().map(v=>v.mesh))];
+  const geos={};
+  await Promise.all(names.map(n=>new Promise((res,rej)=>gltfLoader.load(ASSETS+n+'.glb',g=>{ geos[n]=g.scene; res(); },undefined,rej))));
+  // link groups
+  const mk=name=>{ const g=new THREE.Group(); g.name=name; links[name]=g;
+    (desc.links[name]||[]).forEach(v=>{
+      const vis=new THREE.Group(); vis.position.set(...v.xyz); vis.quaternion.copy(rpyQuat(v.rpy)); g.add(vis);
+      const src=geos[v.mesh]; src.updateMatrixWorld(true);
+      src.traverse(o=>{ if(!o.isMesh) return;
+        const mats=(Array.isArray(o.material)?o.material:[o.material]);
+        mats.forEach(sm=>{
+          const role=roleOf(sm.name||''); const m=BASEMAT[role](); m.userData.role=role; allMats.push(m);
+          const mesh=new THREE.Mesh(o.geometry,m); mesh.matrixAutoUpdate=false; mesh.matrix.copy(o.matrixWorld);
+          mesh.castShadow=true; mesh.receiveShadow=true; vis.add(mesh); meshes.push(mesh); linkOfMesh.set(mesh,name);
+        });
+      });
+    });
+    return g; };
+  Object.keys(Object.fromEntries(desc.joints.flatMap(j=>[[j.parent,1],[j.child,1]])) ).forEach(n=>{ if(!links[n]) mk(n); });
+  if(!links.base) mk('base');
+  robotRoot.add(links.base);
+  desc.joints.forEach(j=>{
+    const jg=new THREE.Group(); jg.position.set(...j.xyz); jg.quaternion.copy(rpyQuat(j.rpy));
+    jg.userData.origin=new THREE.Vector3(...j.xyz);
+    const rot=new THREE.Group(); jg.add(rot); rot.add(links[j.child]); links[j.parent].add(jg);
+    joints[j.name]={...j,g:jg,rot,axis:new THREE.Vector3(...j.axis),q:0};
+    // skeleton: bone from parent frame origin to this joint, plus axis marker for revolute joints
+    if(/hip_joint|thigh_joint|calf_joint|foot_joint/.test(j.name)){
+      const bone=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3(...j.xyz)]),skelMats.line);
+      links[j.parent].add(bone); skel.push(bone);
+      const node=new THREE.Mesh(new THREE.SphereGeometry(j.type==='fixed'?.016:.011,16,10),skelMats.node); jg.add(node); skel.push(node);
+    }
+    if(j.type==='revolute'){
+      const cyl=new THREE.Mesh(new THREE.CylinderGeometry(.007,.007,.075,12),skelMats.axis);
+      cyl.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),new THREE.Vector3(...j.axis)); jg.add(cyl); skel.push(cyl);
+      const L=.045, ag=new THREE.BufferGeometry().setFromPoints([0,0,0, L,0,0, 0,0,0, 0,L,0, 0,0,0, 0,0,L].reduce((a,_,i,s)=>i%3?a:[...a,new THREE.Vector3(s[i],s[i+1],s[i+2])],[]));
+      ag.setAttribute('color',new THREE.Float32BufferAttribute([.88,.56,.36,.88,.56,.36, .95,.92,.96,.95,.92,.96, .55,.5,.65,.55,.5,.65],3));
+      const tri=new THREE.LineSegments(ag,skelMats.ax); rot.add(tri); skel.push(tri);
+    }
   });
-});
+  // trunk outline for the kinematics view
+  const box=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(.3762,.0935,.114)),skelMats.line); links.base.add(box); skel.push(box);
+  // x-ray edges (computed once per unique geometry)
+  const edgeCache=new Map();
+  meshes.forEach(m=>{ let eg=edgeCache.get(m.geometry); if(!eg){ eg=new THREE.EdgesGeometry(m.geometry,38); edgeCache.set(m.geometry,eg); }
+    const e=new THREE.LineSegments(eg,edgeMat); e.matrixAutoUpdate=false; e.matrix.copy(m.matrix); m.parent.add(e); edgeLines.push(e); });
+  robot=desc;
+}
 
-/* ---------- modes ---------- */
+/* ---------- view modes ---------- */
 let mode='exterior', explodeTarget=0, explodeT=0, camMode='full', tween=null;
-function setOpacity(list,op){ list.forEach(m=>{ const tr=op<1; m.transparent=tr; m.opacity=op; m.depthWrite=!tr||op>.5; m.needsUpdate=true; }); }
 function setMode(m,silent){
   mode=m; press('#modes','mode',m);
-  const shellOp={exterior:1,clear:.12,shelloff:1,wiring:.04,exploded:1}[m];
-  setOpacity(roleMats.shells,shellOp);
-  pickables.forEach(o=>{
-    const r=o.userData.role;
-    if(r==='shells'){ o.visible = m!=='shelloff'; o.castShadow = shellOp===1; }
-    if(r==='inner'){ o.visible = m!=='exterior'; }
-  });
-  edges.forEach(e=>e.visible = (m==='clear'||m==='wiring'));
-  edgeMat.color.set(m==='wiring'?0xe0905c:0xf1ebf6); edgeMat.opacity = m==='wiring'?.4:.6;
-  setOpacity(roleMats.inner, m==='wiring'?.18:1);
-  setOpacity(roleMats.joints.filter(x=>x!==J.eye&&x!==J.tip), m==='wiring'?.22:1);
-  const wv = (m==='clear'||m==='shelloff'||m==='wiring');
-  wires.forEach(w=>{ w.mesh.visible=wv; w.pk.visible=(m==='wiring'||m==='clear'); w.mesh.material.emissiveIntensity = m==='wiring'?1.5:.3; });
-  explodeTarget = m==='exploded'?1:0;
-  controls.autoRotate = (m==='exploded'||camMode==='orbit') && !reduce;
+  if(robot){
+    allMats.forEach(mat=>{
+      const x=m==='xray', w=m==='wire';
+      mat.wireframe=w; mat.transparent=x||w; mat.opacity=x?.13:(w?.32:1); mat.depthWrite=!(x||w);
+      if(w){ mat.userData.keep=mat.userData.keep||mat.color.getHex(); mat.color.setHex(0xe9e2f2); mat.emissive.setHex(0x2a2232); }
+      else if(mat.userData.keep!==undefined){ mat.color.setHex(mat.userData.keep); mat.userData.keep=undefined; mat.emissive.setHex(mat.userData.role==='accent'?0x5a2c12:0x000000); }
+      mat.needsUpdate=true;
+    });
+    meshes.forEach(o=>{ o.visible=m!=='kin'; o.castShadow=(m==='exterior'||m==='exploded'); });
+    edgeLines.forEach(e=>e.visible=m==='xray');
+    skel.forEach(s=>s.visible=(m==='xray'||m==='kin'));
+  }
+  explodeTarget=m==='exploded'?1:0;
+  controls.autoRotate=(m==='exploded'||camMode==='orbit')&&!reduce;
   if(m!=='exploded') closePanel();
   if(!silent) hideHint();
 }
 
-/* ---------- poses & actions ---------- */
-const LEGK=['FL','FR','RL','RR'];
-function base(){ return {ty:0,pitch:0,roll:0,tail:0,hy:0,hp:0,L:{FL:[0,-.7,1.4],FR:[0,-.7,1.4],RL:[0,-.7,1.4],RR:[0,-.7,1.4]}}; }
-const DUR={shake:2.6,jump:1.25,wag:2.2,trot:4.5,sit:Infinity,idle:Infinity};
+/* ---------- poses (joint angles in rad: [hip, thigh, calf]) ---------- */
+const LEGS=['FL','FR','RL','RR'], SIDE={FL:1,FR:-1,RL:1,RR:-1};
+const STAND=[0,.8,-1.5];
+function base(){ return {z:0,roll:0,pitch:0,yaw:0,L:{FL:[...STAND],FR:[...STAND],RL:[...STAND],RR:[...STAND]}}; }
+const DUR={shake:2.8,jump:1.3,stretch:2.8,trot:4.5,sit:Infinity,idle:Infinity};
 let action='idle', aStart=0;
 function poseFor(a,t,now){
   const p=base();
-  if(a==='idle'){ p.ty=.008*Math.sin(now*2.2); p.tail=.15*Math.sin(now*1.4); }
-  if(a==='sit'){ p.pitch=.45; p.ty=-.19; p.hp=-.38; p.tail=.2*Math.sin(now*3);
-    p.L.FL=[0,-1.15,1.4]; p.L.FR=[0,-1.15,1.4]; p.L.RL=[0,-1.75,2.66]; p.L.RR=[0,-1.75,2.66]; }
-  if(a==='shake'){ p.pitch=.1; p.ty=-.03; p.hp=-.12; p.hy=-.2;
-    p.L.FR=[-.1,1.25,.45+.4*Math.sin(t*9)]; p.L.FL=[0,-.6,1.3]; p.L.RL=[0,-.9,1.7]; p.L.RR=[0,-.9,1.7]; p.tail=.5*Math.sin(t*14); }
+  if(a==='idle'){ p.z=.004*Math.sin(now*2.2); }
+  if(a==='sit'){ p.pitch=-.5; p.L.FL=[0,.7,-1.4]; p.L.FR=[0,.7,-1.4]; p.L.RL=[0,2.2,-2.7]; p.L.RR=[0,2.2,-2.7]; }
+  if(a==='shake'){ p.pitch=-.12; p.roll=-.06;
+    p.L.FR=[-.15,-.45,-1.25+.32*Math.sin(t*9)]; p.L.FL=[.05,.75,-1.45]; p.L.RL=[0,1.0,-1.9]; p.L.RR=[0,1.0,-1.9]; }
   if(a==='jump'){
-    if(t<.38){ p.ty=-.18; p.hp=.1; LEGK.forEach(k=>p.L[k]=[0,-1.05,2.1]); }
-    else if(t<.8){ const u=(t-.38)/.42; p.ty=.09+.4*Math.sin(Math.PI*u); p.pitch=-.12*Math.sin(Math.PI*u); LEGK.forEach(k=>p.L[k]=[0,-.45,.9]); p.tail=.8; }
-    else { p.ty=-.125; LEGK.forEach(k=>p.L[k]=[0,-.95,1.9]); }
+    if(t<.4){ LEGS.forEach(k=>p.L[k]=[0,1.15,-2.4]); }
+    else if(t<.85){ const u=(t-.4)/.45; p.z=.17*Math.sin(Math.PI*u); p.pitch=.08*Math.sin(Math.PI*u); LEGS.forEach(k=>p.L[k]=[0,.55,-1.05]); }
+    else LEGS.forEach(k=>p.L[k]=[0,1.0,-2.0]);
   }
-  if(a==='wag'){ p.tail=.75*Math.sin(t*20); p.roll=.05*Math.sin(t*10); p.hy=.18*Math.sin(t*5); p.hp=.08*Math.sin(t*10); p.ty=.01*Math.sin(t*20);
-    p.L.RL=[.08*Math.sin(t*10),-.7,1.4]; p.L.RR=[.08*Math.sin(t*10),-.7,1.4]; }
+  if(a==='stretch'){ p.pitch=.32; p.L.FL=[0,-.35,-.95]; p.L.FR=[0,-.35,-.95]; p.L.RL=[0,.75,-1.45]; p.L.RR=[0,.75,-1.45]; }
   if(a==='trot'){ const ph=t*Math.PI*2*2.2;
-    const lg=q=>{ const lift=Math.max(0,Math.sin(q)); return [0,-.7+.26*Math.cos(q)-.25*lift,1.4+.75*lift]; };
+    const lg=q=>{ const lift=Math.max(0,Math.sin(q)); return [0,.8-.2*Math.cos(q)-.12*lift,-1.5-.55*lift]; };
     p.L.FL=lg(ph); p.L.RR=lg(ph); p.L.FR=lg(ph+Math.PI); p.L.RL=lg(ph+Math.PI);
-    p.ty=.012*Math.sin(2*ph); p.pitch=.02*Math.sin(ph); p.tail=.3*Math.sin(ph); p.hp=.04*Math.sin(2*ph); }
+    p.z=.006*Math.sin(2*ph); p.pitch=.015*Math.sin(ph); p.roll=.015*Math.sin(ph); }
   return p;
 }
 const cur=base();
-function blend(target,k){
-  for(const f of ['ty','pitch','roll','tail','hy','hp']) cur[f]+=(target[f]-cur[f])*k;
-  LEGK.forEach(l=>{ for(let i=0;i<3;i++) cur.L[l][i]+=(target.L[l][i]-cur.L[l][i])*k; });
-}
+function blend(tg,k){ for(const f of ['z','roll','pitch','yaw']) cur[f]+=(tg[f]-cur[f])*k; LEGS.forEach(l=>{ for(let i=0;i<3;i++) cur.L[l][i]+=(tg.L[l][i]-cur.L[l][i])*k; }); }
 function doAction(a){ action=a; aStart=clock; press('#actions','act',a); hideHint(); }
+function clampQ(j,q){ return j.limit?Math.min(j.limit[1],Math.max(j.limit[0],q)):q; }
+function setQ(name,q){ const j=joints[name]; if(!j) return; j.q=clampQ(j,q); j.rot.quaternion.setFromAxisAngle(j.axis,j.q); }
 
 /* ---------- camera presets ---------- */
-const PRESETS={ full:{p:[2.8,1.25,3.4],t:[0,.55,0]}, head:{p:[1.85,.92,1.05],t:[.62,.68,0]}, leg:{p:[1.25,.4,1.7],t:[.38,.3,.2]}, orbit:{p:[3.0,1.5,3.5],t:[0,.55,0]} };
+const PRESETS={ full:{p:[2.4,1.05,2.9],t:[0,.42,0]}, head:{p:[1.55,.78,.95],t:[.55,.52,0]}, leg:{p:[1.05,.32,1.35],t:[.38,.25,.2]}, orbit:{p:[2.6,1.3,3.1],t:[0,.42,0]} };
 function camTo(name,instant){
   camMode=name; press('#cams','cam',name);
-  const P=PRESETS[name], tgt=new THREE.Vector3(...P.t), pos=new THREE.Vector3(...P.p);
-  if(stage.clientWidth/stage.clientHeight < .9) pos.sub(tgt).multiplyScalar(1.6).add(tgt);
+  const P=PRESETS[name],tgt=new THREE.Vector3(...P.t),pos=new THREE.Vector3(...P.p);
+  if(stage.clientWidth/stage.clientHeight<.9) pos.sub(tgt).multiplyScalar(1.6).add(tgt);
   if(instant){ camera.position.copy(pos); controls.target.copy(tgt); controls.update(); }
   else tween={fp:camera.position.clone(),ft:controls.target.clone(),tp:pos,tt:tgt,s:clock};
-  controls.autoRotate = (name==='orbit'||mode==='exploded') && !reduce;
+  controls.autoRotate=(name==='orbit'||mode==='exploded')&&!reduce;
 }
-
-function setFinish(f){ const v=FIN[f]; roleMats.shells.forEach(m=>{ if(m.userData.finish){ m.color.setHex(v[0]); m.roughness=v[1]; m.metalness=v[2]; } }); press('#finishes','finish',f); }
+function setFinish(f){ const v=FIN[f]; allMats.forEach(m=>{ if(m.userData.role==='shell'){ if(m.userData.keep!==undefined) m.userData.keep=v[0]; else m.color.setHex(v[0]); m.roughness=v[1]; m.metalness=v[2]; } }); press('#finishes','finish',f); }
 
 /* ---------- UI wiring ---------- */
-function press(sel,attr,val){ document.querySelectorAll(sel+' .opt').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset[attr]===val))); }
+function press(sel,attr,val){ document.querySelectorAll(sel+' .opt').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset[attr]===val))); }
 document.getElementById('modes').addEventListener('click',e=>{ const b=e.target.closest('[data-mode]'); if(b) setMode(b.dataset.mode); });
 document.getElementById('actions').addEventListener('click',e=>{ const b=e.target.closest('[data-act]'); if(b) doAction(b.dataset.act); });
 document.getElementById('finishes').addEventListener('click',e=>{ const b=e.target.closest('[data-finish]'); if(b) setFinish(b.dataset.finish); });
 document.getElementById('cams').addEventListener('click',e=>{ const b=e.target.closest('[data-cam]'); if(b) camTo(b.dataset.cam); });
 
-const ray=new THREE.Raycaster(), ndc=new THREE.Vector2(), tmpV=new THREE.Vector3(), tmpW=new THREE.Vector3();
-let down=null, pointerActive=false, lastMove=-10;
-function setNdc(e){ const r=canvas.getBoundingClientRect(); ndc.set((e.clientX-r.left)/r.width*2-1, -((e.clientY-r.top)/r.height)*2+1); }
-function hitDog(){ ray.setFromCamera(ndc,camera); return ray.intersectObjects(pickables.filter(o=>o.visible),false)[0]; }
+const ray=new THREE.Raycaster(),ndc=new THREE.Vector2(),tmpV=new THREE.Vector3(),tmpW=new THREE.Vector3();
+let down=null,pointerActive=false,lastMove=-10;
+function setNdc(e){ const r=canvas.getBoundingClientRect(); ndc.set((e.clientX-r.left)/r.width*2-1,-((e.clientY-r.top)/r.height)*2+1); }
+function hitRobot(){ if(!robot) return null; ray.setFromCamera(ndc,camera); return ray.intersectObjects(meshes.filter(o=>o.visible),false)[0]; }
 canvas.addEventListener('pointerdown',e=>{ down={x:e.clientX,y:e.clientY}; });
-canvas.addEventListener('pointermove',e=>{ setNdc(e); pointerActive=true; lastMove=clock;
-  if(e.pointerType==='mouse') canvas.classList.toggle('hover', !!hitDog()); });
+canvas.addEventListener('pointermove',e=>{ setNdc(e); pointerActive=true; lastMove=clock; if(e.pointerType==='mouse') canvas.classList.toggle('hover',!!hitRobot()); });
 canvas.addEventListener('pointerleave',()=>{ pointerActive=false; canvas.classList.remove('hover'); });
-const CYCLE=['shake','wag','jump','sit','trot']; let cycleI=0;
+const CYCLE=['shake','jump','stretch','sit','trot']; let cycleI=0;
 canvas.addEventListener('pointerup',e=>{
   if(!down) return; const moved=Math.hypot(e.clientX-down.x,e.clientY-down.y); down=null; if(moved>6) return;
-  setNdc(e); const h=hitDog(); if(!h) return;
-  if(mode==='exploded'){ const k=partOf(h.object); if(k){ openPanel(k); return; } }
+  setNdc(e); const h=hitRobot(); if(!h) return;
+  if(mode==='exploded'){ const k=partOf(linkOfMesh.get(h.object)); if(k){ openPanel(k); return; } }
   doAction(action==='sit'?'idle':CYCLE[cycleI++%CYCLE.length]);
 });
-function partOf(o){ while(o){ if(o===headG) return 'head'; if(o===boardG) return 'board'; if(o===battG) return 'battery'; if(LEGK.some(k=>legs[k].g===o)) return 'legs'; o=o.parent; } return null; }
+function partOf(link){ if(!link) return null; if(link==='base') return 'base'; if(/_hip$/.test(link)) return 'hip'; if(/_(thigh|calf)$/.test(link)) return 'thigh'; if(/_foot$/.test(link)) return 'foot'; return null; }
 
 const hint=document.getElementById('hint'); let hintOn=true;
 function hideHint(){ hintOn=false; hint.style.opacity=0; }
 
-/* ---------- callouts: live readouts + exploded part tags ---------- */
-const svg=document.getElementById('leaders'), coWrap=document.getElementById('callouts');
-const NS='http://www.w3.org/2000/svg';
+/* ---------- callouts ---------- */
+const svg=document.getElementById('leaders'),coWrap=document.getElementById('callouts'),NS='http://www.w3.org/2000/svg';
 function mkCallout(o){
   o.line=document.createElementNS(NS,'line'); svg.appendChild(o.line);
   o.cross=document.createElementNS(NS,'path'); svg.appendChild(o.cross);
-  o.el=document.createElement(o.tag?'button':'div'); o.el.className='co'+(o.tag?' tag':'');
+  o.el=document.createElement(o.tag?'button':'div'); o.el.className='co'+(o.tag?' tag':''); o.el.style.opacity=0;
   if(o.tag){ o.el.innerHTML=`<span class="no">${o.no}</span><span>${o.nm}</span><span class="zh">${o.zh}</span>`; o.el.addEventListener('click',()=>openPanel(o.k)); }
   coWrap.appendChild(o.el); return o;
 }
-const READ=[
-  {obj:headG, off:[.2,.12,0], dx:70, dy:-60, txt:()=>`HEAD YAW ${(THREE.MathUtils.radToDeg(headPivot.rotation.y)).toFixed(1).padStart(5)}°`},
-  {obj:legs.FL.knee, off:[0,0,.05], dx:80, dy:30, txt:()=>`KNEE FL ${(THREE.MathUtils.radToDeg(legs.FL.knee.rotation.z)).toFixed(1).padStart(5)}°`},
-  {obj:torso, off:[-.45,.16,0], dx:-110, dy:-70, txt:()=>`BASE Z ${torso.position.y.toFixed(3)} m`},
-].map(mkCallout);
-const TAGS=[
-  {tag:1,k:'head', obj:headG, off:[.08,.12,0], dx:60, dy:-56, no:'U-01', nm:'HEAD', zh:'关于我'},
-  {tag:1,k:'legs', obj:legs.FL.g, off:[0,-.2,.08], dx:70, dy:40, no:'U-02', nm:'ACTUATORS', zh:'技能'},
-  {tag:1,k:'board', obj:boardG, off:[0,.02,0], dx:-40, dy:-70, no:'U-03', nm:'MAIN BOARD', zh:'项目'},
-  {tag:1,k:'battery', obj:battG, off:[-.1,0,0], dx:-60, dy:50, no:'U-04', nm:'POWER CELL', zh:'联系'},
-].map(mkCallout);
-function project(v){ v.project(camera); return {x:(v.x*.5+.5)*stage.clientWidth, y:(-v.y*.5+.5)*stage.clientHeight}; }
+const deg=r=>(r*180/Math.PI).toFixed(1);
+let READ=[],TAGS=[];
+function buildCallouts(){
+  READ=[
+    {link:'base',off:[.2,0,.06],dx:70,dy:-64,txt:()=>`<span class="k">base_z</span> ${(baseHeight()).toFixed(3)} m`},
+    {link:'FL_calf',joint:'FL_calf_joint',off:[0,.02,0],dx:90,dy:26,txt:()=>`<span class="k">FL_calf_joint</span> ${deg(joints.FL_calf_joint.q).padStart(6)}°`},
+    {link:'RL_thigh',off:[0,.03,0],dx:-120,dy:-58,txt:()=>`<span class="k">RL_thigh_joint</span> ${deg(joints.RL_thigh_joint.q).padStart(6)}°`},
+  ].map(mkCallout);
+  TAGS=[
+    {tag:1,k:'base',link:'base',off:[.05,0,.06],dx:-30,dy:-74,no:'U-01',nm:'base',zh:'关于我'},
+    {tag:1,k:'hip',link:'FL_hip',off:[0,.05,0],dx:70,dy:-46,no:'U-02',nm:'FL_hip',zh:'技能'},
+    {tag:1,k:'thigh',link:'FL_thigh',off:[0,.03,-.1],dx:90,dy:10,no:'U-03',nm:'FL_thigh',zh:'项目'},
+    {tag:1,k:'foot',link:'RL_foot',off:[0,0,0],dx:-70,dy:40,no:'U-04',nm:'RL_foot',zh:'联系'},
+  ].map(mkCallout);
+}
+function project(v){ v.project(camera); return {x:(v.x*.5+.5)*stage.clientWidth,y:(-v.y*.5+.5)*stage.clientHeight}; }
 function placeCallout(o,show){
   o.el.style.opacity=show?1:0; o.line.style.opacity=show?.75:0; o.cross.style.opacity=show?1:0;
   if(o.tag){ o.el.style.pointerEvents=show?'auto':'none'; o.el.tabIndex=show?0:-1; }
   if(!show) return;
-  tmpV.set(...o.off); o.obj.localToWorld(tmpV); const a=project(tmpV);
-  const narrow=stage.clientWidth<760, k=narrow?.6:1;
-  const bx=a.x+o.dx*k, by=a.y+o.dy*k;
+  tmpV.set(...o.off); links[o.link].localToWorld(tmpV); const a=project(tmpV);
+  const k=stage.clientWidth<760?.6:1, bx=a.x+o.dx*k, by=a.y+o.dy*k;
   o.line.setAttribute('x1',a.x); o.line.setAttribute('y1',a.y); o.line.setAttribute('x2',bx); o.line.setAttribute('y2',by);
   o.cross.setAttribute('d',`M${a.x-5} ${a.y}H${a.x+5}M${a.x} ${a.y-5}V${a.y+5}`);
-  if(!o.tag) o.el.textContent=o.txt();
-  const left=o.dx<0;
-  o.el.style.transform=`translate(${bx}px,${by}px) translate(${left?'calc(-100% - 6px)':'6px'},-50%)`;
+  if(!o.tag) o.el.innerHTML=o.txt();
+  o.el.style.transform=`translate(${bx}px,${by}px) translate(${o.dx<0?'calc(-100% - 6px)':'6px'},-50%)`;
 }
 
 /* ---------- panel ---------- */
-const panel=document.getElementById('panel'), pbody=document.getElementById('panel-body');
+const panel=document.getElementById('panel'),pbody=document.getElementById('panel-body');
 function openPanel(k){
   const card=document.getElementById('card-'+k);
   pbody.innerHTML=`<div class="unit" style="margin-bottom:10px">${card.querySelector('.unit').innerHTML}</div>`+card.querySelector('.body').innerHTML.replace(/id="t-[a-z]+"/,'id="panel-title"');
@@ -596,12 +533,11 @@ function closePanel(){ panel.hidden=true; }
 document.getElementById('panel-close').addEventListener('click',closePanel);
 document.querySelectorAll('.locate').forEach(b=>b.addEventListener('click',()=>{
   stage.scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'});
-  if(mode!=='exploded') setMode('exploded');
-  openPanel(b.dataset.part);
+  if(mode!=='exploded') setMode('exploded'); openPanel(b.dataset.part);
 }));
 function bindCopy(root){
   root.querySelectorAll('.copy').forEach(btn=>btn.onclick=()=>{
-    const v=btn.parentElement.querySelector('.v'), txt=v.textContent;
+    const v=btn.parentElement.querySelector('.v'),txt=v.textContent;
     const done=()=>{ btn.textContent='已复制'; setTimeout(()=>btn.textContent='复制',1400); };
     const sel=()=>{ const r=document.createRange(); r.selectNodeContents(v); const s=getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent='已选中'; };
     try{ navigator.clipboard.writeText(txt).then(done,sel); }catch(e){ sel(); }
@@ -612,60 +548,79 @@ bindCopy(document);
 /* ---------- resize ---------- */
 function resize(){ const w=stage.clientWidth,h=stage.clientHeight; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); svg.setAttribute('viewBox',`0 0 ${w} ${h}`); }
 new ResizeObserver(resize).observe(stage);
-let clock=0, last=performance.now();
-resize(); setMode('exterior',true); camTo('full',true);
+let clock=0,last=performance.now();
+resize(); camTo('full',true);
 
-/* ---------- loop ---------- */
+/* ---------- per-frame robot update ---------- */
 const ease=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
-const track={y:0,p:0};
-function frame(now){
-  const dt=Math.min((now-last)/1000,.05); last=now; clock+=dt;
-
+const look={yaw:0,pitch:0};
+const FOOT_R=.022;
+function baseHeight(){ links.base.getWorldPosition(tmpW); return tmpW.y/S; }
+function updateRobot(dt){
   const t=clock-aStart;
   if(t>DUR[action]){ action='idle'; press('#actions','act','idle'); }
-  blend(poseFor(action,t,clock), 1-Math.exp(-dt*(action==='jump'?18:9)));
+  blend(poseFor(action,t,clock),1-Math.exp(-dt*(action==='jump'?16:8)));
 
-  let ty=0,tp=0;
-  if(pointerActive && clock-lastMove<3 && mode!=='exploded'){
-    ray.setFromCamera(ndc,camera); headG.getWorldPosition(tmpW);
-    const p=ray.ray.at(camera.position.distanceTo(tmpW),tmpV); headG.worldToLocal(p);
-    ty=THREE.MathUtils.clamp(Math.atan2(-p.z,p.x),-.75,.75);
-    tp=THREE.MathUtils.clamp(Math.atan2(p.y,Math.hypot(p.x,p.z)),-.45,.45);
+  // body turns a little toward the pointer
+  let ly=0,lp=0;
+  if(pointerActive&&clock-lastMove<3&&mode!=='exploded'&&(action==='idle'||action==='sit')){
+    ray.setFromCamera(ndc,camera); links.base.getWorldPosition(tmpW);
+    const p=ray.ray.at(camera.position.distanceTo(tmpW),tmpV); robotRoot.worldToLocal(p);
+    ly=THREE.MathUtils.clamp(Math.atan2(p.y,p.x-.2),-.3,.3);
+    lp=THREE.MathUtils.clamp(-Math.atan2(p.z-.3,Math.hypot(p.x,p.y))*.4,-.12,.12);
   }
-  track.y+=(ty-track.y)*(1-Math.exp(-dt*6)); track.p+=(tp-track.p)*(1-Math.exp(-dt*6));
+  look.yaw+=(ly-look.yaw)*(1-Math.exp(-dt*4)); look.pitch+=(lp-look.pitch)*(1-Math.exp(-dt*4));
 
   explodeT+=(explodeTarget-explodeT)*(1-Math.exp(-dt*5));
   const e=ease(Math.min(1,Math.max(0,explodeT)));
-  explodables.forEach(g=>g.position.copy(g.userData.base).addScaledVector(g.userData.ex,e));
 
-  torso.position.y=BASE_Y+cur.ty+.32*e;
-  torso.rotation.z=cur.pitch; torso.rotation.x=cur.roll;
-  LEGK.forEach(k=>{ const L=legs[k], v=cur.L[k]; L.abd.rotation.x=v[0]*L.s; L.hip.rotation.z=v[1]; L.knee.rotation.z=v[2]; });
-  headPivot.rotation.y=cur.hy+track.y; headPivot.rotation.z=cur.hp+track.p;
-  tailPivot.rotation.x=cur.tail;
+  LEGS.forEach(l=>{ const q=cur.L[l],s=SIDE[l];
+    setQ(l+'_hip_joint',q[0]*s); setQ(l+'_thigh_joint',q[1]); setQ(l+'_calf_joint',q[2]);
+    const hip=joints[l+'_hip_joint'],th=joints[l+'_thigh_joint'],ca=joints[l+'_calf_joint'],ft=joints[l+'_foot_joint'];
+    hip.g.position.copy(hip.g.userData.origin).multiply(tmpV.set(1+.45*e,1,1)).add(tmpW.set(0,s*.07*e,0));
+    th.g.position.copy(th.g.userData.origin).multiplyScalar(1+1.4*e);
+    ca.g.position.copy(ca.g.userData.origin).multiplyScalar(1+.45*e);
+    ft.g.position.copy(ft.g.userData.origin).multiplyScalar(1+.6*e);
+  });
+  const b=links.base;
+  b.rotation.set(cur.roll,cur.pitch+look.pitch,cur.yaw+look.yaw,'ZYX');
+  b.position.set(0,0,0);
+  // keep the lowest foot on the ground, then add the pose's own lift
+  robotRoot.position.y=0; robotRoot.updateMatrixWorld(true);
+  let minY=Infinity; LEGS.forEach(l=>{ links[l+'_foot'].getWorldPosition(tmpW); minY=Math.min(minY,tmpW.y); });
+  robotRoot.position.y=FOOT_R*S-minY+(cur.z+.12*e)*S;
+}
 
-  wires.forEach(w=>{ if(w.pk.visible) w.pk.position.copy(w.curve.getPointAt((clock*w.speed+w.off)%1)); });
-  J.eye.emissiveIntensity=2+.5*Math.sin(clock*2);
-
+function frame(now){
+  const dt=Math.min((now-last)/1000,.05); last=now; clock+=dt;
+  if(robot) updateRobot(dt);
   if(!reduce){
     const a=dgeo.attributes.position;
     for(let i=0;i<DUST;i++){ let y=a.array[i*3+1]-dsp[i]*dt; a.array[i*3]+=Math.sin(clock*.3+i)*dt*.05+dt*.06; if(y<0){ y=5; a.array[i*3]=(Math.random()-.5)*14; } if(a.array[i*3]>7) a.array[i*3]=-7; a.array[i*3+1]=y; }
     a.needsUpdate=true;
   }
-
-  if(tween){ const u=Math.min(1,(clock-tween.s)/1.1), k=ease(u);
-    camera.position.lerpVectors(tween.fp,tween.tp,k); controls.target.lerpVectors(tween.ft,tween.tt,k); if(u>=1) tween=null; }
+  if(tween){ const u=Math.min(1,(clock-tween.s)/1.1),k=ease(u); camera.position.lerpVectors(tween.fp,tween.tp,k); controls.target.lerpVectors(tween.ft,tween.tt,k); if(u>=1) tween=null; }
   controls.update();
   renderer.render(scene,camera);
-
-  const exp=explodeT>.6;
-  READ.forEach(o=>placeCallout(o, explodeT<.1 && stage.clientWidth>=560));
-  TAGS.forEach(o=>placeCallout(o, exp));
-  if(hintOn){ headG.getWorldPosition(tmpV); tmpV.y+=.28; const s=project(tmpV);
-    hint.style.transform=`translate(${s.x}px,${s.y}px) translate(-50%,-100%)`; hint.style.opacity=explodeT>.1?0:1; }
+  if(robot){
+    READ.forEach(o=>placeCallout(o,explodeT<.1&&stage.clientWidth>=560));
+    TAGS.forEach(o=>placeCallout(o,explodeT>.6));
+    if(hintOn){ links.base.getWorldPosition(tmpV); tmpV.y+=.32; tmpV.x+=.35; const s=project(tmpV);
+      hint.style.transform=`translate(${s.x}px,${s.y}px) translate(-50%,-100%)`; hint.style.opacity=explodeT>.1?0:1; }
+  }
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
+
+loadRobot().then(()=>{
+  buildCallouts(); setMode(mode,true);
+  loaderEl.style.opacity=0; setTimeout(()=>loaderEl.hidden=true,600);
+}).catch(err=>{
+  console.error(err);
+  loaderEl.innerHTML=location.protocol==='file:'
+    ? '// 模型没有加载：浏览器不允许直接从本地文件读取模型。<br>在这个文件夹里运行下面的命令，然后打开 http://localhost:8000<code>python3 -m http.server</code>'
+    : '// 模型加载失败，请刷新重试。';
+});
 })();
 </script>
 </body>
