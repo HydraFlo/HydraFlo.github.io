@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Yue Cao — robot perception and robot learning. M.Sc. Computer Science, KIT.">
+<meta name="description" content="Yue Cao — legged robot learning, 3D perception and VLA. M.Sc. Computer Science, KIT.">
 <title>Yue Cao</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: one fixed 3D canvas behind a scrolling story — hero, four project chapters with side panels, then an opaque CV section. */
+/* Layout: one fixed 3D canvas behind a scrolling story — hero, five project chapters with side panels, then an opaque CV section. */
 :root{
   --fog:#8e889c;
   --bg:#17151c;
@@ -126,6 +126,12 @@ input[type=range]{width:100%;accent-color:var(--copper)}
 .bars .v{text-align:right;font-variant-numeric:tabular-nums}
 .pad{width:100%;aspect-ratio:16/9;max-width:100%;display:block;background:rgba(239,235,243,.04);border:1px solid var(--line);border-radius:3px;cursor:crosshair;touch-action:none}
 .status{font-family:var(--font-mono);font-size:12px;color:var(--copper);min-height:1.2em}
+.bench{display:grid;grid-template-columns:52px repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);font-family:var(--font-mono);font-size:11.5px}
+.bench > *{background:rgba(23,21,28,.92);padding:7px 9px;color:var(--muted);min-width:0}
+.bench b{font-weight:500;font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums}
+.bench .rh{color:var(--ink)}
+.codes{display:flex;flex-wrap:wrap;gap:6px;min-height:24px}
+.codes span{font-family:var(--font-mono);font-size:11.5px;padding:2px 7px;border:1px solid rgba(210,148,102,.5);color:var(--copper);border-radius:2px;font-variant-numeric:tabular-nums}
 .disc{font-family:var(--font-mono);font-size:11px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px}
 
 /* exploded-view panel */
@@ -206,8 +212,8 @@ footer a{color:var(--muted)}
         <div class="ident">
           <div class="lbl">// ROBOT PERCEPTION & LEARNING · KIT · KARLSRUHE</div>
           <h1>Yue Cao</h1>
-          <p class="tagline">机器人感知与机器人学习。<br>KIT 计算机科学硕士在读，MaiRo 实验室研究助理。</p>
-          <a class="scrollcue" href="#ch1">↓ 往下滚动：感知 → 表示 → 行动 → 压缩</a>
+          <p class="tagline">足式机器人学习、3D 感知与 VLA。<br>KIT 计算机科学硕士在读 · FZI 毕设 · MaiRo 研究助理。</p>
+          <a class="scrollcue" href="#ch1">↓ 往下滚动：运动 → 感知 → 表示 → 行动 → 压缩</a>
         </div>
         <div class="right">
           <div>
@@ -257,15 +263,56 @@ footer a{color:var(--muted)}
     </div>
   </section>
 
-  <!-- ======= 01 PERCEIVE ======= -->
+  <!-- ======= 01 LOCOMOTE ======= -->
   <section class="chap" data-ch="1" id="ch1">
     <div class="cpanel">
       <div>
-        <div class="cno">01 / PERCEIVE · 感知</div>
-        <h2>多模态场景感知</h2>
-        <div class="cmeta">Research Assistant · MaiRo Lab, KIT · 2025.10 – 至今</div>
+        <div class="cno">01 / LOCOMOTE · 运动</div>
+        <h2>ParkourBench</h2>
+        <div class="cmeta">硕士毕业设计 · FZI Living Lab · 2026.07 – 至今</div>
       </div>
-      <p>为机器人搭建从传感器到控制的实时感知链路：RGB-D 和 LiDAR 同步，2D 特征投影到 3D，LiDAR 与相机融合，并按场景域把输入路由给不同的分割模型。</p>
+      <p>面向四足机器人敏捷运动的 Sim2Real 评测基准：用低成本、可复现的跑酷赛道评测爬行、跳跃、攀爬，靠机载传感自动评分，不需要动捕。策略在 Isaac Lab 中训练，导出 ONNX / LibTorch 后在 Unitree Go2 上以 50 Hz 闭环运行。</p>
+      <div class="ctl">
+        <div class="lbl">////// 任务</div>
+        <div class="seg" role="group" aria-label="跑酷任务" id="pkKind">
+          <button data-v="crawl" aria-pressed="true">爬行</button>
+          <button data-v="jump" aria-pressed="false">跳跃</button>
+          <button data-v="climb" aria-pressed="false">攀爬</button>
+        </div>
+      </div>
+      <div class="ctl">
+        <div class="lbl">////// 环境 · 策略</div>
+        <div class="btns" style="gap:8px">
+          <div class="seg" role="group" aria-label="仿真或真机" id="pkEnv" style="flex:2;min-width:180px">
+            <button data-v="sim" aria-pressed="true">仿真 Isaac Lab</button>
+            <button data-v="real" aria-pressed="false">真机 Go2</button>
+          </div>
+          <div class="seg" role="group" aria-label="强化学习算法" id="pkAlgo" style="flex:1;min-width:110px">
+            <button data-v="ppo" aria-pressed="true">PPO</button>
+            <button data-v="sac" aria-pressed="false">SAC</button>
+          </div>
+        </div>
+      </div>
+      <div class="bench" aria-live="polite">
+        <span></span><span>运行</span><span>通过率</span><span>跌倒率</span>
+        <span class="rh">仿真</span><b id="bSimN">0</b><b id="bSimP">—</b><b id="bSimF">—</b>
+        <span class="rh">真机</span><b id="bRealN">0</b><b id="bRealP">—</b><b id="bRealF">—</b>
+      </div>
+      <div class="status" id="pkStatus">// CTRL 50 Hz · 准备中</div>
+      <div class="btns"><button class="btn ghost" id="pkReset">重新计数</button></div>
+      <div class="disc">// 交互示意：动作为关键帧动画，成败按设定概率随机抽样，不是真实评测结果。</div>
+    </div>
+  </section>
+
+  <!-- ======= 02 PERCEIVE ======= -->
+  <section class="chap" data-ch="2" id="ch2">
+    <div class="cpanel">
+      <div>
+        <div class="cno">02 / PERCEIVE · 感知</div>
+        <h2>多模态场景感知</h2>
+        <div class="cmeta">研究助理 · MaiRo Lab, KIT · 2025.10 – 至今</div>
+      </div>
+      <p>基于 ROS2 搭建 RGB-D 与 LiDAR 的实时感知管线：硬件同步与联合标定，Open3D 点云预处理，2D–3D 特征反投影，TensorRT / ONNX 加速。再用动态域路由，让语义分割在不同场景下保持鲁棒。</p>
       <div class="ctl">
         <div class="lbl">////// 模态</div>
         <div class="seg" role="group" aria-label="点云着色模态" id="lidarMode">
@@ -287,43 +334,43 @@ footer a{color:var(--muted)}
           <div class="r" data-v="snow"><span>seg·snow</span><span class="t"><i></i></span><span class="v"></span></div>
         </div>
       </div>
-      <div class="disc">// 交互示意：点云由模拟的 16 线扫描生成，分割与路由权重为演示用，非真实模型输出。</div>
+      <div class="disc">// 交互示意：点云由模拟的 18 线扫描生成，分割与路由权重为演示用，非真实模型输出。</div>
     </div>
   </section>
 
-  <!-- ======= 02 REPRESENT ======= -->
-  <section class="chap" data-ch="2" id="ch2">
+  <!-- ======= 03 REPRESENT ======= -->
+  <section class="chap" data-ch="3" id="ch3">
     <div class="cpanel">
       <div>
-        <div class="cno">02 / REPRESENT · 表示</div>
-        <h2>Direct Gaussian Representations for ACT</h2>
-        <div class="cmeta">Project · 2026.05 – 至今</div>
+        <div class="cno">03 / REPRESENT · 表示</div>
+        <h2>GaussianACT</h2>
+        <div class="cmeta">科研项目 · Intuitive Robots Lab, KIT · 2025.12 – 2026.06</div>
       </div>
-      <p>用前馈 3D Gaussian Splatting 做 ACT 策略的感知前端。几何 tokenizer 把数量不定的高斯变成固定长度的 token，再和机器人状态、RGB 一起送进策略网络。</p>
+      <p>把前馈式 3DGS 作为视觉运动策略的 3D 感知前端：多视角图像重建出 1,024 个高斯基元，再通过可学习查询和交叉注意力压缩成 16 个场景 token，保留 3D 几何与遮挡关系。</p>
       <div class="ctl">
         <div class="lbl">////// 场景表示</div>
         <input type="range" id="splat" min="0" max="1" step="0.01" value="0" aria-label="网格与 3D 高斯之间切换">
         <div class="rng"><span>网格 MESH</span><span>3D GAUSSIANS</span></div>
       </div>
-      <div class="btns"><button class="btn" id="tokBtn">Tokenize →</button></div>
+      <div class="btns"><button class="btn" id="tokBtn">压缩成场景 token →</button></div>
       <div class="stats">
-        <div><b id="gCount">0</b><span>GAUSSIANS</span></div>
-        <div><b id="tCount">—</b><span>TOKENS</span></div>
-        <div><b>11</b><span>ATTRS / G</span></div>
+        <div><b id="gCount">1,024</b><span>GAUSSIANS</span></div>
+        <div><b id="tCount">—</b><span>SCENE TOKENS</span></div>
+        <div><b>×64</b><span>COMPRESSION</span></div>
       </div>
-      <div class="disc">// 交互示意：高斯由物体表面采样得到，token 分配为空间分箱，非真实模型输出。</div>
+      <div class="disc">// 交互示意：高斯由物体表面采样，token 分配用空间分箱代替交叉注意力，非真实模型输出。</div>
     </div>
   </section>
 
-  <!-- ======= 03 ACT ======= -->
-  <section class="chap" data-ch="3" id="ch3">
+  <!-- ======= 04 ACT ======= -->
+  <section class="chap" data-ch="4" id="ch4">
     <div class="cpanel">
       <div>
-        <div class="cno">03 / ACT · 行动</div>
-        <h2>Action Chunking</h2>
-        <div class="cmeta">ACT policy · learned-query cross-attention encoder</div>
+        <div class="cno">04 / ACT · 行动</div>
+        <h2>高斯条件化 ACT 策略</h2>
+        <div class="cmeta">GaussianACT · MuJoCo 操作任务 · 对标 Diffusion Policy</div>
       </div>
-      <p>策略每次预测一整段未来动作，而不是一步一步输出。<b style="color:var(--copper);font-weight:500">点击桌上的物体</b>，机械臂会把它放到铜色托盘上，再点一次放回原位。亮起来的虚影就是当前预测的 action chunk。</p>
+      <p>策略融合多视角 RGB 和 3D 场景 token，每次预测一整段未来动作（action chunk），而不是一步一步输出。<b style="color:var(--copper);font-weight:500">点击桌上的物体</b>，机械臂会把它放到铜色托盘上，再点一次放回原位。发光的虚影就是当前这一块动作。</p>
       <div class="stats">
         <div><b id="chunkK">16</b><span>STEPS / CHUNK</span></div>
         <div><b id="chunkI">—</b><span>CHUNK</span></div>
@@ -335,32 +382,33 @@ footer a{color:var(--muted)}
     </div>
   </section>
 
-  <!-- ======= 04 COMPRESS ======= -->
-  <section class="chap" data-ch="4" id="ch4">
+  <!-- ======= 05 COMPRESS ======= -->
+  <section class="chap" data-ch="5" id="ch5">
     <div class="cpanel">
       <div>
-        <div class="cno">04 / COMPRESS · 压缩</div>
-        <h2>Action & Trajectory Tokenization for VLA</h2>
-        <div class="cmeta">Project · 2025.11 – 2026.04</div>
+        <div class="cno">05 / COMPRESS · 压缩</div>
+        <h2>面向 VLA 的动作 Tokenizer</h2>
+        <div class="cmeta">科研项目 · Intuitive Robots Lab, KIT · 2025.06 – 2025.11</div>
       </div>
-      <p>为 VLA 模型设计紧凑的动作与轨迹 tokenizer：在保持任务表现的前提下，把 token 序列缩短 90% 以上。<b style="color:var(--copper);font-weight:500">在下面画一条轨迹</b>，机械臂会把压缩后重建的轨迹画到桌上。</p>
+      <p>先用 B-spline 把动作块重参数化成连续控制点，再用 RVQ 量化成少量离散 token，缩短自回归 VLA 的生成序列。项目里 140 维动作块 → 35 维控制点 → 8 个 token，在 LIBERO 上推理延迟降低 26%。<b style="color:var(--copper);font-weight:500">在下面画一条轨迹试试。</b></p>
       <canvas class="pad" id="pad" width="760" height="428" aria-label="画轨迹的画板"></canvas>
       <div class="ctl">
-        <div class="lbl">////// 保留系数 K</div>
-        <input type="range" id="kSlider" min="3" max="40" step="1" value="10" aria-label="保留的系数个数">
+        <div class="lbl">////// RVQ 层数 = token 数</div>
+        <input type="range" id="kSlider" min="1" max="8" step="1" value="8" aria-label="RVQ 层数">
+        <div class="codes" id="codes"></div>
       </div>
       <div class="stats">
-        <div><b id="rawT">256</b><span>RAW TOKENS</span></div>
-        <div><b id="cmpT">20</b><span>TOKENS</span></div>
-        <div><b id="redT">−92%</b><span>LENGTH</span></div>
+        <div><b id="rawT">140</b><span>ACTION DIMS</span></div>
+        <div><b id="cmpT">34</b><span>CTRL-PT DIMS</span></div>
+        <div><b id="redT">8</b><span>TOKENS</span></div>
       </div>
       <div class="btns"><button class="btn" id="drawBtn">让机械臂画出来</button><button class="btn ghost" id="clearBtn">清空画板</button></div>
-      <div class="disc">// 交互示意：这里用 DCT 截断模拟压缩，真实项目是学习得到的多模态 tokenizer。</div>
+      <div class="disc">// 交互示意：2D 轨迹用 17 个控制点拟合；RVQ 用逐层三值残差量化代替学习到的码本。</div>
     </div>
   </section>
 
   <!-- ======= CV ======= -->
-  <section class="info" data-ch="5" id="about">
+  <section class="info" data-ch="6" id="about">
     <div class="wrap">
       <div class="sec-head">
         <div>
@@ -374,7 +422,8 @@ footer a{color:var(--muted)}
           <span class="unit"><b>U-01</b> · base · ABOUT</span>
           <div class="body">
             <h3 id="t-base">关于我</h3>
-            <p style="margin-top:10px">我是 Yue Cao，在卡尔斯鲁厄理工学院（KIT）读计算机科学硕士，同时在 MaiRo 实验室做研究助理。我的方向是机器人感知与机器人学习：多模态感知、3D 场景表示、模仿学习和视觉-语言-动作模型。</p>
+            <p style="margin-top:10px">我是 Yue Cao，在卡尔斯鲁厄理工学院（KIT）读计算机科学硕士，在 FZI Living Lab 做四足机器人跑酷的毕业设计，同时在 MaiRo 实验室做研究助理。我的方向是机器人学习与 3D 感知：足式运动的强化学习与 Sim2Real、3D 高斯表示、模仿学习和视觉-语言-动作模型。</p>
+            <p style="margin-top:10px;color:var(--muted);font-family:var(--font-mono);font-size:13px">// 中文（母语） · English C1 · Deutsch C1</p>
           </div>
         </article>
         <article class="card" id="card-edu">
@@ -382,8 +431,8 @@ footer a{color:var(--muted)}
           <div class="body">
             <h3>教育背景</h3>
             <ul class="tl" style="margin-top:12px">
-              <li><span class="yr">2025.10 – 至今</span><strong>M.Sc. Computer Science</strong><span class="d">Karlsruhe Institute of Technology</span></li>
-              <li><span class="yr">2020.10 – 2025.10</span><strong>B.Sc. Information Systems</strong><span class="d">Karlsruhe Institute of Technology · 毕业论文：A Comparison of Machine Learning Approaches for Human Activity Recognition（1.3）</span></li>
+              <li><span class="yr">2025.10 – 2027.06</span><strong>M.Sc. Computer Science</strong><span class="d">Karlsruhe Institute of Technology · 预计 2027 年 6 月毕业 · 毕业设计 ParkourBench（FZI）</span></li>
+              <li><span class="yr">2020.10 – 2025.10</span><strong>B.Sc. Information Systems</strong><span class="d">Karlsruhe Institute of Technology · 毕业论文：A Comparison of Machine Learning Approaches for Human Activity Recognition</span></li>
             </ul>
           </div>
         </article>
@@ -392,9 +441,10 @@ footer a{color:var(--muted)}
           <div class="body">
             <h3 id="t-thigh">项目与经历</h3>
             <ul class="tl" style="margin-top:12px">
-              <li><span class="yr">2025.10 – 至今</span><strong><a href="#ch1">多模态场景感知</a></strong><span class="d">MaiRo Lab 研究助理 · RGB-D/LiDAR 实时管线、2D–3D 融合、多域分割</span></li>
-              <li><span class="yr">2026.05 – 至今</span><strong><a href="#ch2">Direct Gaussian Representations for ACT</a></strong><span class="d">3DGS 作为 ACT 策略的感知前端</span></li>
-              <li><span class="yr">2025.11 – 2026.04</span><strong><a href="#ch4">Action & Trajectory Tokenization for VLA</a></strong><span class="d">token 序列缩短 90% 以上，任务表现不变</span></li>
+              <li><span class="yr">2026.07 – 至今</span><strong><a href="#ch1">ParkourBench</a></strong><span class="d">FZI Living Lab · 四足跑酷 Sim2Real 评测基准，Go2 真机 50 Hz 部署</span></li>
+              <li><span class="yr">2025.12 – 2026.06</span><strong><a href="#ch3">GaussianACT</a></strong><span class="d">Intuitive Robots Lab · 1,024 个高斯 → 16 个场景 token 的 3D 视觉运动策略</span></li>
+              <li><span class="yr">2025.10 – 至今</span><strong><a href="#ch2">多模态场景感知</a></strong><span class="d">MaiRo Lab 研究助理 · ROS2 RGB-D/LiDAR 管线、2D–3D 融合、多域分割</span></li>
+              <li><span class="yr">2025.06 – 2025.11</span><strong><a href="#ch5">面向 VLA 的动作 Tokenizer</a></strong><span class="d">Intuitive Robots Lab · B-spline + RVQ，140 维 → 8 个 token，推理延迟 −26%</span></li>
             </ul>
           </div>
         </article>
@@ -403,9 +453,11 @@ footer a{color:var(--muted)}
           <div class="body">
             <h3 id="t-hip">技能</h3>
             <div class="sk" style="margin-top:12px">
-              <div><div class="g">// Robot Learning & 3D Vision</div><ul class="chips"><li>Embodied AI</li><li>Imitation Learning</li><li>3D Scene Representations</li><li>2D–3D Sensor Fusion</li><li>Semantic Segmentation</li></ul></div>
-              <div><div class="g">// Frameworks & Robotics</div><ul class="chips"><li>PyTorch</li><li>ROS</li><li>MuJoCo</li><li>Isaac Lab</li><li>LIBERO</li><li>Open3D</li><li>VLMs</li></ul></div>
-              <div><div class="g">// Engineering</div><ul class="chips"><li>Python</li><li>CUDA</li><li>SLURM</li><li>Docker</li><li>W&amp;B</li></ul></div>
+              <div><div class="g">// 具身策略与模型</div><ul class="chips"><li>VLA · Florence-2 · OpenVLA · π0</li><li>ACT</li><li>Diffusion Policy</li><li>BC</li><li>RL · PPO · SAC</li></ul></div>
+              <div><div class="g">// 三维视觉与感知</div><ul class="chips"><li>3DGS</li><li>多视角几何</li><li>RGB-D / LiDAR 融合</li><li>3D 语义分割</li><li>Open3D</li></ul></div>
+              <div><div class="g">// 仿真与机器人</div><ul class="chips"><li>Isaac Sim / Lab</li><li>MuJoCo</li><li>LeRobot</li><li>LIBERO</li><li>Unitree Go2（真机）</li><li>ANYmal</li><li>G1 / H1</li></ul></div>
+              <div><div class="g">// 训练与推理加速</div><ul class="chips"><li>SFT</li><li>LoRA / PEFT</li><li>PyTorch DDP</li><li>DeepSpeed</li><li>TensorRT</li><li>ONNX Runtime</li></ul></div>
+              <div><div class="g">// 编程与工程</div><ul class="chips"><li>Python</li><li>PyTorch</li><li>ROS 1/2</li><li>Linux</li><li>Docker</li><li>SLURM</li><li>Git · CI/CD</li></ul></div>
             </div>
           </div>
         </article>
@@ -667,17 +719,17 @@ function sampleObj(o,n){
     G.push({owner:o.mesh,lp:p,ln:nn,s:[.008+Math.random()*.012,.008+Math.random()*.012,.003],col:c});
   }
 }
-OBJS.forEach((o,i)=>sampleObj(o,[230,210,190][i]));
-for(let i=0;i<520;i++){ const p=new THREE.Vector3(.93+(Math.random()-.5)*.6,TABLE_Y+.002,(Math.random()-.5)*.8);
+OBJS.forEach((o,i)=>sampleObj(o,[220,200,180][i]));
+for(let i=0;i<424;i++){ const p=new THREE.Vector3(.93+(Math.random()-.5)*.6,TABLE_Y+.002,(Math.random()-.5)*.8);
   const c=new THREE.Color(0x2c2832).offsetHSL(0,0,(Math.random()-.3)*.08); if(Math.random()<.04) c.setHex(0xc27f55);
   G.push({owner:null,lp:p,ln:new THREE.Vector3(0,1,0),s:[.014+Math.random()*.02,.014+Math.random()*.02,.002],col:c}); }
 const gMesh=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,1),new THREE.MeshStandardMaterial({roughness:.5,metalness:.1,transparent:true,opacity:.9}),G.length);
 G.forEach((g,i)=>gMesh.setColorAt(i,g.col)); gMesh.visible=false; scene.add(gMesh);
-const NTOK=64, tokGroup=new THREE.Group(); scene.add(tokGroup); tokGroup.visible=false;
+const NTOK=16, tokGroup=new THREE.Group(); scene.add(tokGroup); tokGroup.visible=false;
 const tokMat=new THREE.MeshStandardMaterial({color:0x2c2832,roughness:.4,metalness:.6,emissive:0xd29466,emissiveIntensity:0});
-const tokMesh=new THREE.InstancedMesh(new THREE.BoxGeometry(.042,.042,.012),tokMat,NTOK); tokGroup.add(tokMesh);
+const tokMesh=new THREE.InstancedMesh(new THREE.BoxGeometry(.075,.075,.016),tokMat,NTOK); tokGroup.add(tokMesh);
 const tokCenters=[];
-for(let i=0;i<NTOK;i++){ const x=(i%8-3.5)*.056,y=(3.5-Math.floor(i/8))*.056; const m=new THREE.Matrix4().makeTranslation(x,y,0); tokMesh.setMatrixAt(i,m); tokCenters.push(new THREE.Vector3(x,y,0)); }
+for(let i=0;i<NTOK;i++){ const x=(i%4-1.5)*.1,y=(1.5-Math.floor(i/4))*.1; const m=new THREE.Matrix4().makeTranslation(x,y,0); tokMesh.setMatrixAt(i,m); tokCenters.push(new THREE.Vector3(x,y,0)); }
 let splat=0,splatT=0,tok=0,tokT=0;
 const gm=new THREE.Matrix4(),gq=new THREE.Quaternion(),gs=new THREE.Vector3(),gp=new THREE.Vector3(),gZ=new THREE.Vector3(0,0,1),tokW=[];
 let gBins=null;
@@ -807,10 +859,73 @@ function blend(tg,k){ for(const f of ['z','roll','pitch','yaw']) cur[f]+=(tg[f]-
 function doAction(a,silent){ action=a; aStart=clock; press('#actions','opt','act',a); if(!silent) hideHint(); }
 function setQ(n,q){ const j=joints[n]; if(!j) return; j.q=j.limit?Math.min(j.limit[1],Math.max(j.limit[0],q)):q; j.rot.quaternion.setFromAxisAngle(j.axis,j.q); }
 
+/* ================= ParkourBench course (chapter 01) ================= */
+const course=new THREE.Group(); scene.add(course); course.visible=false;
+const obsMat=new THREE.MeshStandardMaterial({color:0x2c2832,roughness:.75,metalness:.15});
+const pkCu=new THREE.MeshStandardMaterial({color:0xc27f55,roughness:.3,metalness:.9,emissive:0x40200c,emissiveIntensity:.35});
+const OB={crawl:new THREE.Group(),jump:new THREE.Group(),climb:new THREE.Group()};
+const BAR_Y=.5, BARS=[.95,1.45], GAP=[.8,1.32], BOX=[.98,2.7], BOXH=.36;
+BARS.forEach(x=>{ [-.46,.46].forEach(z=>{ const p=new THREE.Mesh(new THREE.BoxGeometry(.04,BAR_Y+.04,.04),obsMat); p.position.set(x,(BAR_Y+.04)/2,z); p.castShadow=true; OB.crawl.add(p); });
+  const b=new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,.96,16),pkCu); b.rotation.x=Math.PI/2; b.position.set(x,BAR_Y,0); b.castShadow=true; OB.crawl.add(b); });
+(function(){ const w=GAP[1]-GAP[0];
+  const pit=new THREE.Mesh(new THREE.BoxGeometry(w,.03,1.1),new THREE.MeshBasicMaterial({color:0x0c0a10})); pit.position.set((GAP[0]+GAP[1])/2,.02,0); OB.jump.add(pit);
+  GAP.forEach(x=>{ const e=new THREE.Mesh(new THREE.BoxGeometry(.012,.036,1.1),pkCu); e.position.set(x,.02,0); OB.jump.add(e); });
+  const box=new THREE.Mesh(new THREE.BoxGeometry(BOX[1]-BOX[0],BOXH,1.0),obsMat); box.position.set((BOX[0]+BOX[1])/2,BOXH/2,0); box.castShadow=box.receiveShadow=true; OB.climb.add(box);
+  const lip=new THREE.Mesh(new THREE.BoxGeometry(.014,.014,1.0),pkCu); lip.position.set(BOX[0],BOXH,0); OB.climb.add(lip);
+})();
+course.add(OB.crawl,OB.jump,OB.climb);
+function groundAt(x){ if(chapter!==1) return 0; if(pk.kind==='jump'&&x>GAP[0]&&x<GAP[1]) return null; if(pk.kind==='climb'&&x>BOX[0]&&x<BOX[1]) return BOXH; return 0; }
+const PROB={ppo:{sim:{crawl:.96,jump:.93,climb:.91},real:{crawl:.86,jump:.74,climb:.79}},sac:{sim:{crawl:.93,jump:.88,climb:.86},real:{crawl:.8,jump:.66,climb:.71}}};
+const pk={kind:'crawl',env:'sim',algo:'ppo',run:false,x:-.8,t:0,phase:'idle',fail:false,ph0:0,next:0,lastY:0,runs:0,stats:{sim:{n:0,p:0,f:0},real:{n:0,p:0,f:0}}};
+const pkStatus=document.getElementById('pkStatus');
+const KIND_ZH={crawl:'爬行',jump:'跳跃',climb:'攀爬'};
+function pkShow(){ Object.values(OB).forEach(g=>g.visible=false); OB[pk.kind].visible=true; }
+function pkStart(){ pkShow(); Object.assign(pk,{run:true,x:-.8,t:0,phase:'go',ph0:clock,fail:Math.random()>PROB[pk.algo][pk.env][pk.kind]}); pk.runs++;
+  pkStatus.textContent=`// CTRL 50 Hz · RUN ${String(pk.runs).padStart(3,'0')} · ${KIND_ZH[pk.kind]} · ${pk.env==='real'?'真机':'仿真'} · ${pk.algo.toUpperCase()}`; }
+function pkEnd(pass){
+  const s=pk.stats[pk.env]; s.n++; pass?s.p++:s.f++; pk.run=false; pk.next=clock+1.1;
+  pkStatus.textContent+=pass?' · ✓ 通过':' · ✕ 跌倒'; pkTable();
+}
+function pkTable(){ ['sim','real'].forEach(e=>{ const s=pk.stats[e],K=e==='sim'?'Sim':'Real';
+  document.getElementById('b'+K+'N').textContent=s.n; document.getElementById('b'+K+'P').textContent=s.n?Math.round(s.p/s.n*100)+'%':'—'; document.getElementById('b'+K+'F').textContent=s.n?Math.round(s.f/s.n*100)+'%':'—'; }); }
+function pkReset(){ pk.run=false; pk.x=-.8; pk.next=clock+.6; Object.assign(cur,base()); }
+function pkPose(dt){
+  const p=base(); const jitter=pk.env==='real'?1:0;
+  if(!pk.run){ p.z=.004*Math.sin(clock*2.2); if(clock>pk.next&&pk.next>0){ pk.x=-.8; Object.assign(cur,base()); pkStart(); } return p; }
+  pk.t+=dt; let speed=0,gait=false,crouch=false;
+  if(pk.phase==='fall'){ const u=Math.min(1,(clock-pk.ph0)/.8); p.roll=1.3*ease(u); p.pitch=pk.kind==='climb'?-.5:.15; p.z=-.04*u;
+    LEGS.forEach(l=>p.L[l]=[.35*u,.5+.6*u,-1.1-.8*u]); if(clock-pk.ph0>2) pkEnd(false); return p; }
+  const k=pk.kind,x=pk.x;
+  if(k==='crawl'){ crouch=x>.25&&x<1.95; speed=crouch?.42:.8; gait=true; if(pk.fail&&x>.55){ pk.phase='fall'; pk.ph0=clock; } }
+  if(k==='climb'){ speed=x>.35&&x<1.5?.38:.75; gait=true; if(pk.fail&&x>.5){ pk.phase='fall'; pk.ph0=clock; } }
+  if(k==='jump'){
+    if(pk.phase==='go'){ speed=.8; gait=true; if(x>=.3){ pk.phase='crouch'; pk.ph0=clock; } }
+    else if(pk.phase==='crouch'){ LEGS.forEach(l=>p.L[l]=[0,1.15,-2.4]); p.pitch=.08; if(clock-pk.ph0>.32){ pk.phase='air'; pk.ph0=clock; } }
+    else if(pk.phase==='air'){ const u=Math.min(1,(clock-pk.ph0)/.55), d=pk.fail?.62:1.05; pk.x=.3+d*u; p.z=.15*Math.sin(Math.PI*u); p.pitch=-.15*Math.cos(Math.PI*u);
+      LEGS.forEach(l=>p.L[l]=u<.45?[0,.5,-1.0]:[0,1.05,-2.1]);
+      if(u>=1){ if(pk.fail){ pk.phase='fall'; pk.ph0=clock; } else { pk.phase='land'; pk.ph0=clock; } } }
+    else if(pk.phase==='land'){ LEGS.forEach(l=>p.L[l]=[0,1.0,-2.0]); if(clock-pk.ph0>.3) pk.phase='go2'; }
+    else { speed=.8; gait=true; }
+  }
+  if(gait){ const ph=pk.t*Math.PI*2*2.4, b=crouch?[0,1.3,-2.55]:STAND, A=crouch?.12:.2, Lf=crouch?.08:.12, Kf=crouch?.25:.55;
+    const lg=q=>{ const lift=Math.max(0,Math.sin(q)); return [0,b[1]-A*Math.cos(q)-Lf*lift,b[2]-Kf*lift]; };
+    p.L.FL=lg(ph); p.L.RR=lg(ph); p.L.FR=lg(ph+Math.PI); p.L.RL=lg(ph+Math.PI); p.z=.005*Math.sin(2*ph); }
+  pk.x+=speed*dt;
+  // body pitch follows the terrain under front and rear hips (climb)
+  const gF=groundAt(pk.x+.39)||0,gR=groundAt(pk.x-.39)||0; p.pitch+=-Math.atan2(gF-gR,.78);
+  if(jitter){ p.roll+=.025*Math.sin(clock*17)+.015*Math.sin(clock*29); p.pitch+=.015*Math.sin(clock*23); }
+  if(pk.x>2.9) pkEnd(true);
+  return p;
+}
+document.getElementById('pkKind').addEventListener('click',e=>{ const b=e.target.closest('[data-v]'); if(!b) return; pk.kind=b.dataset.v; press('#pkKind','x','v',pk.kind); pkShow(); pkReset(); });
+document.getElementById('pkEnv').addEventListener('click',e=>{ const b=e.target.closest('[data-v]'); if(!b) return; pk.env=b.dataset.v; press('#pkEnv','x','v',pk.env); pkReset(); });
+document.getElementById('pkAlgo').addEventListener('click',e=>{ const b=e.target.closest('[data-v]'); if(!b) return; pk.algo=b.dataset.v; press('#pkAlgo','x','v',pk.algo); pkReset(); });
+document.getElementById('pkReset').addEventListener('click',()=>{ pk.stats={sim:{n:0,p:0,f:0},real:{n:0,p:0,f:0}}; pk.runs=0; pkTable(); pkReset(); });
+
 /* ================= camera ================= */
 const HERO_CAMS={ full:{p:[2.4,1.05,2.9],t:[0,.42,0]}, head:{p:[1.55,.78,.95],t:[.55,.52,0]}, leg:{p:[1.05,.32,1.35],t:[.38,.25,.2]}, orbit:{p:[2.6,1.3,3.1],t:[0,.42,0]} };
-const CH_CAMS={1:{p:[3.6,2.6,3.9],t:[.3,.35,0]},2:{p:[2.1,1.38,1.75],t:[.8,.62,0]},3:{p:[2.25,1.55,1.45],t:[.82,.58,-.05]},4:{p:[2.15,2.2,.02],t:[.92,.47,0]}};
-function camPreset(){ return chapter===0||chapter>4?HERO_CAMS[camMode]:CH_CAMS[chapter]; }
+const CH_CAMS={1:{p:[1.05,1.2,3.7],t:[1.05,.42,0]},2:{p:[3.6,2.6,3.9],t:[.3,.35,0]},3:{p:[2.1,1.38,1.75],t:[.8,.62,0]},4:{p:[2.25,1.55,1.45],t:[.82,.58,-.05]},5:{p:[2.15,2.2,.02],t:[.92,.47,0]}};
+function camPreset(){ return chapter===0||chapter>5?HERO_CAMS[camMode]:CH_CAMS[chapter]; }
 function camTo(P,instant){
   const tgt=new THREE.Vector3(...P.t),pos=new THREE.Vector3(...P.p);
   if(innerWidth/innerHeight<.9) pos.sub(tgt).multiplyScalar(chapter===0?1.6:1.35).add(tgt);
@@ -820,7 +935,7 @@ function camTo(P,instant){
 function heroCam(name,instant){ camMode=name; press('#cams','opt','cam',name); if(chapter===0) camTo(HERO_CAMS[name],instant); controls.autoRotate=chapter===0&&(name==='orbit'||mode==='exploded')&&!reduce; }
 let viewOff={x:0,y:0},viewOffT={x:0,y:0};
 function setViewOffsetTarget(){
-  const w=innerWidth,h=innerHeight,story=chapter>=1&&chapter<=4;
+  const w=innerWidth,h=innerHeight,story=chapter>=1&&chapter<=5;
   viewOffT.x=story&&w>820?-Math.min(w*.17,260):0; viewOffT.y=story&&w<=820?h*.2:0;
 }
 function setFinish(f){ const v=FIN[f]; allMats.forEach(m=>{ if(m.userData.role==='shell'){ if(m.userData.keep!==undefined) m.userData.keep=v[0]; else m.color.setHex(v[0]); m.roughness=v[1]; m.metalness=v[2]; } }); press('#finishes','opt','finish',f); }
@@ -835,7 +950,7 @@ on('cams','click',e=>{ const b=e.target.closest('[data-cam]'); if(b) heroCam(b.d
 on('lidarMode','click',e=>{ const b=e.target.closest('[data-v]'); if(!b) return; lidarMode=b.dataset.v; press('#lidarMode','x','v',lidarMode); colorLidar(); });
 on('domain','click',e=>{ const b=e.target.closest('[data-v]'); if(!b) return; domain=b.dataset.v; press('#domain','x','v',domain); setRouter(); colorLidar(); });
 on('splat','input',e=>{ splatT=+e.target.value; if(splatT<.5){ tokT=0; document.getElementById('tCount').textContent='—'; } });
-on('tokBtn','click',()=>{ if(splatT<.5){ splatT=1; document.getElementById('splat').value=1; } gBins=null; tokT=tokT>.5?0:1; document.getElementById('tokBtn').textContent=tokT?'← 还原高斯':'Tokenize →'; document.getElementById('tCount').textContent=tokT?NTOK:'—'; });
+on('tokBtn','click',()=>{ if(splatT<.5){ splatT=1; document.getElementById('splat').value=1; } gBins=null; tokT=tokT>.5?0:1; document.getElementById('tokBtn').textContent=tokT?'← 还原高斯':'压缩成场景 token →'; document.getElementById('tCount').textContent=tokT?NTOK:'—'; });
 document.getElementById('gCount').textContent=G.length.toLocaleString('en');
 setRouter();
 
@@ -847,13 +962,13 @@ function hitRobot(){ if(!robot) return null; ray.setFromCamera(ndc,camera); retu
 function hitObj(){ ray.setFromCamera(ndc,camera); const h=ray.intersectObjects(OBJS.map(o=>o.mesh),false)[0]; return h?OBJS.find(o=>o.mesh===h.object):null; }
 canvas.addEventListener('pointerdown',e=>{ down={x:e.clientX,y:e.clientY}; });
 canvas.addEventListener('pointermove',e=>{ setNdc(e); pointerActive=true; lastMove=clock;
-  if(e.pointerType==='mouse') canvas.classList.toggle('hover', chapter===0?!!hitRobot():(chapter===3&&!!hitObj())); });
+  if(e.pointerType==='mouse') canvas.classList.toggle('hover', chapter===0?!!hitRobot():(chapter===4&&!!hitObj())); });
 canvas.addEventListener('pointerleave',()=>{ pointerActive=false; canvas.classList.remove('hover'); });
 const CYCLE=['shake','jump','stretch','sit','trot']; let cycleI=0;
 canvas.addEventListener('pointerup',e=>{
   if(!down) return; const moved=Math.hypot(e.clientX-down.x,e.clientY-down.y); down=null; if(moved>6) return;
   setNdc(e);
-  if(chapter===3){ const o=hitObj(); if(o) actPick(o); return; }
+  if(chapter===4){ const o=hitObj(); if(o) actPick(o); return; }
   if(chapter!==0) return;
   const h=hitRobot(); if(!h) return;
   if(mode==='exploded'){ const k=partOf(linkOfMesh.get(h.object)); if(k){ openPanel(k); return; } }
@@ -958,7 +1073,7 @@ on('resetBtn','click',()=>{ if(ex.pts) return; OBJS.forEach(o=>{ o.slot=-1; o.me
 const qTmp=[0,0,0,0];
 function updateArm(dt){
   if(!arm.base) return;
-  const deployed=chapter>=2&&chapter<=4;
+  const deployed=chapter>=3&&chapter<=5; arm.base.visible=deployed;
   let target=null;
   if(ex.pts){
     if(ex.pause>0){ ex.pause-=dt; }
@@ -989,22 +1104,40 @@ function handleEv(e){
   if(e.release){ const o=e.release; ex.held=null; o.mesh.position.y=TABLE_Y+(e.slot>=0?.004:0)+o.h; o.slot=e.slot; gBins=null; }
 }
 
-/* ================= trajectory pad + DCT (chapter 04) ================= */
-const pad=document.getElementById('pad'),pctx=pad.getContext('2d'),N=128;
-let raw=[],rec=[],drawing=false,stroke=[];
-function sampleCurve(){ const p=[]; for(let i=0;i<N;i++){ const t=i/(N-1); p.push([.5+.36*Math.sin(2*Math.PI*t)*Math.cos(.5*Math.PI*t)+.04*Math.sin(9*t),.5+.28*Math.sin(4*Math.PI*t)*.9+.06*Math.cos(5*Math.PI*t)]); } return p; }
+/* ================= trajectory pad + B-spline + RVQ (chapter 05) ================= */
+const pad=document.getElementById('pad'),pctx=pad.getContext('2d'),N=70,M=17;
+let raw=[],rec=[],ctrl=[],drawing=false,stroke=[];
+const BASIS=(function(){ // clamped uniform cubic B-spline basis, N samples x M control points
+  const p=3,nk=M+p+1,kn=[]; for(let i=0;i<nk;i++) kn.push(i<=p?0:(i>=M?1:(i-p)/(M-p)));
+  const B=[]; for(let s=0;s<N;s++){ let u=s/(N-1); if(u>=1) u=1-1e-9;
+    const f=new Array(nk-1).fill(0); for(let i=0;i<nk-1;i++) f[i]=(u>=kn[i]&&u<kn[i+1])?1:0;
+    for(let d=1;d<=p;d++) for(let i=0;i<nk-1-d;i++){ const a=kn[i+d]-kn[i],b=kn[i+d+1]-kn[i+1]; f[i]=(a?(u-kn[i])/a*f[i]:0)+(b?(kn[i+d+1]-u)/b*f[i+1]:0); }
+    B.push(f.slice(0,M)); }
+  return B; })();
+function fitCtrl(vals){ // least squares B c = vals
+  const A=[...Array(M)].map(()=>new Array(M).fill(0)),b=new Array(M).fill(0);
+  for(let s=0;s<N;s++) for(let i=0;i<M;i++){ b[i]+=BASIS[s][i]*vals[s]; for(let j=0;j<M;j++) A[i][j]+=BASIS[s][i]*BASIS[s][j]; }
+  for(let i=0;i<M;i++) A[i][i]+=1e-6;
+  for(let c=0;c<M;c++){ let piv=c; for(let r=c+1;r<M;r++) if(Math.abs(A[r][c])>Math.abs(A[piv][c])) piv=r; [A[c],A[piv]]=[A[piv],A[c]]; [b[c],b[piv]]=[b[piv],b[c]];
+    for(let r=c+1;r<M;r++){ const k=A[r][c]/A[c][c]; for(let j=c;j<M;j++) A[r][j]-=k*A[c][j]; b[r]-=k*b[c]; } }
+  const x=new Array(M).fill(0); for(let r=M-1;r>=0;r--){ let s=b[r]; for(let j=r+1;j<M;j++) s-=A[r][j]*x[j]; x[r]=s/A[r][r]; } return x;
+}
+const evalSpline=(cx,cy)=>BASIS.map(row=>[row.reduce((s,w,i)=>s+w*cx[i],0),row.reduce((s,w,i)=>s+w*cy[i],0)]);
+function sampleCurve(){ const p=[]; for(let i=0;i<N;i++){ const t=i/(N-1); p.push([.5+.36*Math.sin(2*Math.PI*t)*Math.cos(.5*Math.PI*t)+.04*Math.sin(9*t),.5+.25*Math.sin(4*Math.PI*t)+.06*Math.cos(5*Math.PI*t)]); } return p; }
 function resample(s){ if(s.length<2) return null; const d=[0]; for(let i=1;i<s.length;i++) d.push(d[i-1]+Math.hypot(s[i][0]-s[i-1][0],s[i][1]-s[i-1][1])); const L=d[d.length-1]; if(L<.05) return null;
   const out=[]; let j=0; for(let i=0;i<N;i++){ const t=i/(N-1)*L; while(j<d.length-2&&d[j+1]<t) j++; const u=(t-d[j])/((d[j+1]-d[j])||1); out.push([s[j][0]+(s[j+1][0]-s[j][0])*u,s[j][1]+(s[j+1][1]-s[j][1])*u]); } return out; }
-function dct(x){ const n=x.length,X=[]; for(let k=0;k<n;k++){ let s=0; for(let i=0;i<n;i++) s+=x[i]*Math.cos(Math.PI/n*(i+.5)*k); X.push(s); } return X; }
-function idct(X,K,n){ const x=[]; for(let i=0;i<n;i++){ let s=X[0]/n; for(let k=1;k<K;k++) s+=2/n*X[k]*Math.cos(Math.PI/n*(i+.5)*k); x.push(s); } return x; }
 function compress(){
-  const K=+document.getElementById('kSlider').value;
-  const xs=raw.map(p=>p[0]),ys=raw.map(p=>p[1]);
-  const q=v=>Math.round(v*64)/64;                                    // quantise each kept coefficient to an integer token
-  const X=dct(xs).map(q),Y=dct(ys).map(q);
-  const rx=idct(X,K,N),ry=idct(Y,K,N); rec=rx.map((v,i)=>[v,ry[i]]);
-  document.getElementById('rawT').textContent=N*2; document.getElementById('cmpT').textContent=K*2;
-  document.getElementById('redT').textContent='−'+Math.round((1-K/N)*100)+'%';
+  const Lq=+document.getElementById('kSlider').value;
+  const cx=fitCtrl(raw.map(p=>p[0])),cy=fitCtrl(raw.map(p=>p[1]));
+  // residual quantisation: each layer emits one token (a ternary code over all 34 control dims)
+  const v=[...cx,...cy].map(a=>a-.5), q=new Array(v.length).fill(0), codes=[]; let r=v.slice(), step=.25;
+  for(let l=0;l<Lq;l++){ let h=2166136261>>>0;
+    for(let i=0;i<r.length;i++){ const t=Math.max(-1,Math.min(1,Math.round(r[i]/step))); q[i]+=t*step; r[i]-=t*step; h=Math.imul(h^(t+2),16777619)>>>0; }
+    codes.push(h%1024); step/=2; }
+  const qx=q.slice(0,M).map(a=>a+.5),qy=q.slice(M).map(a=>a+.5);
+  ctrl=qx.map((x,i)=>[x,qy[i]]); rec=evalSpline(qx,qy);
+  document.getElementById('rawT').textContent=N*2; document.getElementById('cmpT').textContent=M*2; document.getElementById('redT').textContent=Lq;
+  document.getElementById('codes').innerHTML=codes.map(c=>`<span>#${String(c).padStart(4,'0')}</span>`).join('');
   drawPad();
 }
 function drawPad(){
@@ -1014,8 +1147,14 @@ function drawPad(){
   for(let y=0;y<=h;y+=h/9){ pctx.beginPath(); pctx.moveTo(0,y); pctx.lineTo(w,y); pctx.stroke(); }
   const line=(pts,c,lw,dash)=>{ if(!pts.length) return; pctx.setLineDash(dash||[]); pctx.strokeStyle=c; pctx.lineWidth=lw; pctx.beginPath(); pts.forEach((p,i)=>{ const X=p[0]*w,Y=p[1]*h; i?pctx.lineTo(X,Y):pctx.moveTo(X,Y); }); pctx.stroke(); pctx.setLineDash([]); };
   if(drawing){ line(stroke,'rgba(239,235,243,.9)',3); return; }
-  line(raw,'rgba(239,235,243,.55)',3,[6,6]); line(rec,'#d29466',3.5);
-  pctx.font='22px "JetBrains Mono", monospace'; pctx.fillStyle='rgba(239,235,243,.6)'; pctx.fillText('- - raw   ',16,h-16); pctx.fillStyle='#d29466'; pctx.fillText('— reconstructed',150,h-16);
+  line(raw,'rgba(239,235,243,.5)',3,[6,6]);
+  line(ctrl,'rgba(142,132,160,.8)',1.5);
+  pctx.fillStyle='#8e84a0'; ctrl.forEach(p=>{ pctx.beginPath(); pctx.arc(p[0]*w,p[1]*h,5,0,6.283); pctx.fill(); });
+  line(rec,'#d29466',3.5);
+  pctx.font='20px "JetBrains Mono", monospace';
+  pctx.fillStyle='rgba(239,235,243,.6)'; pctx.fillText('- - 原始',16,h-16);
+  pctx.fillStyle='#8e84a0'; pctx.fillText('● 控制点',120,h-16);
+  pctx.fillStyle='#d29466'; pctx.fillText('— 重建',240,h-16);
 }
 function padPt(e){ const r=pad.getBoundingClientRect(); return [THREE.MathUtils.clamp((e.clientX-r.left)/r.width,0,1),THREE.MathUtils.clamp((e.clientY-r.top)/r.height,0,1)]; }
 pad.addEventListener('pointerdown',e=>{ drawing=true; stroke=[padPt(e)]; pad.setPointerCapture(e.pointerId); drawPad(); });
@@ -1024,7 +1163,7 @@ const endDraw=()=>{ if(!drawing) return; drawing=false; const r=resample(stroke)
 pad.addEventListener('pointerup',endDraw); pad.addEventListener('pointercancel',endDraw);
 on('kSlider','input',()=>{ if(raw.length) compress(); });
 on('drawBtn','click',()=>{ if(rec.length) startTrace(); });
-on('clearBtn','click',()=>{ raw=[];rec=[]; drawPad(); clearTrail(); });
+on('clearBtn','click',()=>{ raw=[];rec=[];ctrl=[]; document.getElementById('codes').innerHTML=''; drawPad(); clearTrail(); });
 raw=sampleCurve(); compress();
 // trail drawn on the table by the arm
 const TRAILMAX=2000,trailGeo=new THREE.BufferGeometry(); trailGeo.setAttribute('position',new THREE.Float32BufferAttribute(new Float32Array(TRAILMAX*3),3)); trailGeo.setDrawRange(0,0);
@@ -1068,16 +1207,17 @@ function updateHAR(dt){
 
 /* ================= chapters ================= */
 const sections=[...document.querySelectorAll('#story [data-ch]')];
-function currentChapter(){ const mid=innerHeight*.5; for(const s of sections){ const r=s.getBoundingClientRect(); if(r.top<=mid&&r.bottom>mid) return +s.dataset.ch; } return 5; }
+function currentChapter(){ const mid=innerHeight*.5; for(const s of sections){ const r=s.getBoundingClientRect(); if(r.top<=mid&&r.bottom>mid) return +s.dataset.ch; } return 6; }
 function enterChapter(c){
   const prev=chapter; chapter=c; setViewOffsetTarget();
   if(c!==0){ if(mode!=='exterior') setMode('exterior',true); if(action!=='idle') doAction('idle',true); closePanel(); }
   controls.autoRotate=c===0&&(mode==='exploded'||camMode==='orbit')&&!reduce;
-  table.visible=c>=2; OBJS.forEach(o=>o.mesh.visible=c>=2); trail.visible=c===4;
-  if(c===1&&!lidar&&robot) setTimeout(buildLidar,30);
-  if(c!==2){ splatT=0; tokT=0; document.getElementById('splat').value=0; document.getElementById('tokBtn').textContent='Tokenize →'; document.getElementById('tCount').textContent='—'; }
-  if(c===4&&prev!==4&&!ex.pts&&rec.length) setTimeout(()=>{ if(chapter===4) startTrace(); },700);
-  if(c<=4) camTo(camPreset());
+  table.visible=c>=3; OBJS.forEach(o=>o.mesh.visible=c>=3); trail.visible=c===5;
+  course.visible=c===1; if(c===1){ pkShow(); pkReset(); } else if(prev===1){ pk.run=false; pk.next=0; Object.assign(cur,base()); }
+  if(c===2&&!lidar&&robot) setTimeout(buildLidar,30);
+  if(c!==3){ splatT=0; tokT=0; document.getElementById('splat').value=0; document.getElementById('tokBtn').textContent='压缩成场景 token →'; document.getElementById('tCount').textContent='—'; }
+  if(c===5&&prev!==5&&!ex.pts&&rec.length) setTimeout(()=>{ if(chapter===5) startTrace(); },700);
+  if(c<=5) camTo(camPreset());
 }
 addEventListener('scroll',()=>{ const c=currentChapter(); if(c!==chapter&&robot) enterChapter(c); },{passive:true});
 
@@ -1093,7 +1233,8 @@ function baseHeight(){ links.base.getWorldPosition(V2); return V2.y/S; }
 function updateDog(dt){
   const t=clock-aStart;
   if(t>DUR[action]){ action='idle'; press('#actions','opt','act','idle'); }
-  blend(poseFor(action,t,clock),damp(dt,action==='jump'?16:8));
+  const pkFast=chapter===1&&/air|crouch|land/.test(pk.phase);
+  blend(chapter===1?pkPose(dt):poseFor(action,t,clock),damp(dt,(action==='jump'||pkFast)?16:8));
   let ly=0,lp=0;
   if(chapter===0&&pointerActive&&clock-lastMove<3&&mode!=='exploded'&&(action==='idle'||action==='sit')){
     ray.setFromCamera(ndc,camera); links.base.getWorldPosition(V2);
@@ -1111,19 +1252,20 @@ function updateDog(dt){
     ft.g.position.copy(ft.g.userData.origin).multiplyScalar(1+.35*e);
   });
   links.base.rotation.set(cur.roll,cur.pitch+look.pitch,cur.yaw+look.yaw,'ZYX'); links.base.position.set(0,0,0);
-  robotRoot.position.y=0; robotRoot.updateMatrixWorld(true);
-  let minY=Infinity; LEGS.forEach(l=>{ links[l+'_foot'].getWorldPosition(V); minY=Math.min(minY,V.y); });
-  robotRoot.position.y=FOOT_R*S-minY+(cur.z+.04*e)*S; robotRoot.updateMatrixWorld(true);
+  robotRoot.position.x=chapter===1?pk.x:0; robotRoot.position.y=0; robotRoot.updateMatrixWorld(true);
+  let minC=Infinity; LEGS.forEach(l=>{ links[l+'_foot'].getWorldPosition(V); const g=groundAt(V.x); if(g===null) return; minC=Math.min(minC,V.y-g); });
+  const gy=minC===Infinity?pk.lastY:FOOT_R*S-minC; pk.lastY=gy;
+  robotRoot.position.y=gy+(cur.z+.04*e)*S; robotRoot.updateMatrixWorld(true);
   if(chapter===0&&!tween){ const want=HERO_CAMS[camMode].t[1]+.32*e; controls.target.y+=(want-controls.target.y)*damp(dt,4); }
 }
 
 function frame(now){
   requestAnimationFrame(frame);
   const dt=Math.min((now-last)/1000,.05); last=now; clock+=dt;
-  if(chapter>=5&&scrollY>innerHeight) return;      // CV section covers the canvas
+  if(chapter>=6&&scrollY>innerHeight) return;      // CV section covers the canvas
   if(robot){ updateDog(dt); updateArm(dt); updateHAR(dt); }
   updateDomain(dt); updateGaussians(dt);
-  if(lidar){ lidarFade+=((chapter===1?1:0)-lidarFade)*damp(dt,4); lidar.visible=lidarFade>.01; lidarMat.uniforms.uFade.value=lidarFade; lidarMat.uniforms.uSweep.value=reduce?0:(clock*2.2)%(Math.PI*2);
+  if(lidar){ lidarFade+=((chapter===2?1:0)-lidarFade)*damp(dt,4); lidar.visible=lidarFade>.01; lidarMat.uniforms.uFade.value=lidarFade; lidarMat.uniforms.uSweep.value=reduce?0:(clock*2.2)%(Math.PI*2);
     frustum.material.opacity=lidarFade*(lidarMode==='fused'?.9:0); frustum.visible=frustum.material.opacity>.01; }
   if(!reduce){ const a=dgeo.attributes.position;
     for(let i=0;i<DUST;i++){ let y=a.array[i*3+1]-dsp[i]*dt; a.array[i*3]+=Math.sin(clock*.3+i)*dt*.05+dt*.06; if(y<0){ y=5; a.array[i*3]=(Math.random()-.5)*14; } if(a.array[i*3]>7) a.array[i*3]=-7; a.array[i*3+1]=y; }
