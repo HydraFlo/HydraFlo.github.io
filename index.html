@@ -9,14 +9,19 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: one fixed 3D canvas behind a scrolling story — hero, five project chapters with side panels, then an opaque CV section. */
+/* Layout: one fixed 3D canvas. Hero = a vinyl record with a sweeping needle; one revolution = one season = one project.
+   "打开交互 demo" swaps the hero UI for a fixed demo panel; an opaque CV section follows below. */
 :root{
+  --sky:#fbe9ee;          /* season background, set from JS */
+  --accent-d:#b04769;     /* season accent for text on the light scene, set from JS */
+  --ink-d:#221e28;
+  --muted-d:#5f5768;
   --fog:#8e889c;
   --bg:#17151c;
   --surface:#211e28;
   --ink:#efebf3;
   --muted:#b3acbf;
-  --copper:#d29466;
+  --copper:#ee8fab;       /* season accent on dark panels, set from JS */
   --mauve:#8e84a0;
   --line:rgba(239,235,243,.2);
   --font-display:"Unbounded","Noto Sans SC",system-ui,sans-serif;
@@ -26,7 +31,7 @@
 }
 *{box-sizing:border-box}
 html{background:var(--bg)}
-body{margin:0;background:var(--fog);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+body{margin:0;background:var(--sky);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
 button,input{font:inherit;color:inherit}
 :focus-visible{outline:1px solid var(--copper);outline-offset:3px}
 [hidden]{display:none!important}
@@ -35,42 +40,77 @@ button,input{font:inherit;color:inherit}
 #gl{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0;cursor:grab}
 #gl.hover{cursor:pointer}
 .vignette{position:fixed;inset:0;z-index:1;pointer-events:none;
-  background:radial-gradient(120% 90% at 50% 55%,transparent 45%,rgba(24,20,32,.55) 100%),linear-gradient(180deg,rgba(24,20,32,.35),transparent 28%,transparent 62%,rgba(24,20,32,.62))}
-.grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.12;mix-blend-mode:overlay;
+  background:radial-gradient(130% 95% at 50% 50%,transparent 55%,rgba(48,36,56,.2) 100%)}
+.grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.1;mix-blend-mode:overlay;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
 #leaders{position:fixed;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
-#leaders line{stroke:var(--ink);stroke-width:1;transition:opacity .35s}
-#leaders path{stroke:var(--ink);stroke-width:1;fill:none;transition:opacity .35s}
+#leaders line{stroke:var(--ink-d);stroke-width:1;transition:opacity .35s}
+#leaders path{stroke:var(--ink-d);stroke-width:1;fill:none;transition:opacity .35s}
 #callouts{position:fixed;inset:0;z-index:2;pointer-events:none}
-.co{position:absolute;left:0;top:0;font-family:var(--font-mono);font-size:11.5px;letter-spacing:.03em;color:var(--ink);
-  white-space:nowrap;pointer-events:none;text-shadow:0 1px 8px rgba(20,16,28,.6);font-variant-numeric:tabular-nums;transition:opacity .35s}
+.co{position:absolute;left:0;top:0;font-family:var(--font-mono);font-size:11.5px;letter-spacing:.03em;color:var(--ink-d);
+  white-space:nowrap;pointer-events:none;text-shadow:0 1px 6px rgba(255,255,255,.7);font-variant-numeric:tabular-nums;transition:opacity .35s}
 .co .k{opacity:.65}
-.co.tag{cursor:pointer;border:0;background:rgba(23,21,28,.74);padding:6px 10px 6px 8px;border-radius:3px;display:flex;gap:8px;align-items:baseline;text-shadow:none}
+.co.tag{cursor:pointer;border:0;background:rgba(23,21,28,.8);color:var(--ink);padding:6px 10px 6px 8px;border-radius:3px;display:flex;gap:8px;align-items:baseline;text-shadow:none}
 .co.tag:hover{background:rgba(23,21,28,.92)}
 .co.tag .no{color:var(--copper)}
 .co.tag .zh{font-family:var(--font-body);font-weight:700;font-size:13px;letter-spacing:0}
 .hint{position:fixed;left:0;top:0;z-index:3;pointer-events:none;font-family:var(--font-mono);font-size:11.5px;letter-spacing:.06em;
   color:var(--bg);background:var(--copper);padding:5px 9px;border-radius:2px;white-space:nowrap;transition:opacity .4s;opacity:0}
-.loader{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:4;font-family:var(--font-mono);font-size:12px;letter-spacing:.06em;color:var(--ink);text-align:center;
-  text-shadow:0 1px 10px rgba(20,16,28,.5);transition:opacity .5s;max-width:min(420px,calc(100% - 40px))}
-.loader .bar{width:180px;height:1px;background:rgba(239,235,243,.25);margin:10px auto 0;position:relative;overflow:hidden}
-.loader .bar i{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--copper);transition:width .2s}
-.loader code{display:block;margin-top:10px;color:var(--copper);user-select:all}
+.loader{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:4;font-family:var(--font-mono);font-size:12px;letter-spacing:.06em;color:var(--ink-d);text-align:center;
+  transition:opacity .5s;max-width:min(420px,calc(100% - 40px))}
+.loader .bar{width:180px;height:1px;background:rgba(34,30,40,.2);margin:10px auto 0;position:relative;overflow:hidden}
+.loader .bar i{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--accent-d);transition:width .2s}
+.loader code{display:block;margin-top:10px;color:var(--accent-d);user-select:all}
+#blink{position:fixed;inset:0;z-index:8;background:var(--sky);opacity:0;pointer-events:none;transition:opacity .28s ease}
+#blink.on{opacity:1}
+html.lock,html.lock body{overflow:hidden}
 
 /* ---------- story ---------- */
 #story{position:relative;z-index:3;pointer-events:none}
 .hero{position:relative;height:100vh;height:100svh;min-height:600px}
 .ui{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;
   padding-block:28px 24px;padding-left:max(28px,env(safe-area-inset-left,0px));padding-right:max(28px,env(safe-area-inset-right,0px));
-  text-shadow:0 1px 10px rgba(20,16,28,.45)}
+  color:var(--ink-d);transition:opacity .35s}
+body.demo-on .hero .ui{opacity:0;pointer-events:none}
+body.demo-on .hero .ui *{pointer-events:none!important}
 .row2{display:flex;justify-content:space-between;align-items:flex-start;gap:24px}
 .row2.bot{align-items:flex-end}
 .row2 > *{pointer-events:auto}
 .ident{max-width:32rem}
 .lbl{font-family:var(--font-mono);font-size:12px;letter-spacing:.06em;color:var(--muted);margin-bottom:8px}
+.hero .lbl{color:var(--muted-d)}
 h1{font-family:var(--font-display);font-weight:700;font-size:clamp(32px,4.6vw,58px);line-height:1.04;margin:0 0 12px;letter-spacing:-.01em;text-wrap:balance}
 .tagline{margin:0;font-family:var(--font-mono);font-size:13px;line-height:1.7;opacity:.88;max-width:27rem}
-.scrollcue{font-family:var(--font-mono);font-size:12px;color:var(--copper);margin-top:14px;display:inline-block}
+.scrollcue{font-family:var(--font-mono);font-size:12px;color:var(--accent-d);display:inline-block;text-decoration:none}
+.scrollcue:hover{text-decoration:underline;text-underline-offset:3px}
+
+/* season card (hero, bottom-left) */
+.season{width:min(450px,100%);background:rgba(23,21,28,.82);color:var(--ink);border:1px solid var(--line);border-radius:4px;
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);overflow:hidden}
+.stabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-bottom:1px solid var(--line)}
+.stabs button{position:relative;border:0;background:transparent;padding:10px 6px 11px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px;color:var(--muted);transition:color .2s,background .2s;min-width:0}
+.stabs button + button{border-left:1px solid var(--line)}
+.stabs button:hover{color:var(--ink);background:rgba(239,235,243,.04)}
+.stabs .zh{font-family:var(--font-body);font-weight:700;font-size:16px;line-height:1.2}
+.stabs .en{font-family:var(--font-mono);font-size:10px;letter-spacing:.08em}
+.stabs i{position:absolute;left:0;bottom:-1px;height:2px;width:0;background:var(--copper)}
+.stabs button[aria-pressed="true"]{color:var(--copper)}
+.sbody{padding:18px 22px 18px;display:flex;flex-direction:column;gap:13px;transition:opacity .3s}
+.sbody.fade{opacity:0}
+.sbody h2{font-family:var(--font-display);font-weight:500;font-size:20px;line-height:1.3;margin:0;text-wrap:balance}
+.sbody p{margin:0;color:#ddd8e4;font-size:14px}
+.btn.icon{padding:7px 11px;min-width:40px;text-align:center}
+.br{display:flex;flex-direction:column;align-items:flex-end;gap:8px;text-align:right}
+.rpm{margin:0}
+
+/* demo dock (replaces the hero UI while a project demo is open) */
+.demo{position:fixed;z-index:5;left:max(28px,env(safe-area-inset-left,0px));top:50%;transform:translateY(-50%);
+  width:min(420px,calc(100% - 40px));max-height:calc(100vh - 40px);max-height:calc(100svh - 40px);overflow-y:auto;overscroll-behavior:contain;
+  display:flex;flex-direction:column;gap:10px;scrollbar-width:thin}
+.dtop{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.dtop .btn{background:rgba(23,21,28,.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.dtop .seg{flex:1;min-width:200px;background:rgba(23,21,28,.82)}
+.demo .cpanel{width:100%}
 
 .opts{display:flex;gap:4px 18px;flex-wrap:wrap}
 .opts.v{flex-direction:column;align-items:flex-end;gap:2px}
@@ -78,22 +118,16 @@ h1{font-family:var(--font-display);font-weight:700;font-size:clamp(32px,4.6vw,58
   display:inline-flex;align-items:center;gap:8px;white-space:nowrap;transition:opacity .2s,color .2s}
 .opt::before{content:"";width:7px;height:7px;border:1px solid currentColor;flex:none}
 .opt:hover{opacity:1}
-.opt[aria-pressed="true"]{opacity:1;color:var(--copper)}
+.opt[aria-pressed="true"]{opacity:1;color:var(--accent-d)}
 .opt[aria-pressed="true"]::before{background:currentColor}
 .opt .zh{font-family:var(--font-body)}
 .opt .en{opacity:.6}
 .right{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:18px}
-.sw{width:14px;height:14px;border:1px solid rgba(255,255,255,.55);flex:none}
-.opt.fin::before{display:none}
-.opt.fin[aria-pressed="true"] .sw{outline:1px solid var(--copper);outline-offset:2px}
-.br{display:flex;flex-direction:column;align-items:flex-end;gap:12px}
 .har{font-family:var(--font-mono);font-size:11.5px;text-align:right}
 .har canvas{display:block;width:160px;height:40px;margin:2px 0 4px auto}
-.har .pred b{color:var(--copper);font-weight:400}
+.har .pred b{color:var(--accent-d);font-weight:400}
 
-/* chapters */
-.chap{position:relative;min-height:115vh;display:flex;align-items:center;
-  padding-block:12vh;padding-left:max(28px,env(safe-area-inset-left,0px));padding-right:max(28px,env(safe-area-inset-right,0px))}
+/* project panels (demo dock) */
 .cpanel{pointer-events:auto;width:min(420px,100%);background:rgba(23,21,28,.8);border:1px solid var(--line);border-radius:4px;
   padding:24px 24px 20px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:flex;flex-direction:column;gap:16px}
 .cno{font-family:var(--font-mono);font-size:12px;letter-spacing:.06em;color:var(--copper)}
@@ -184,8 +218,15 @@ footer a{color:var(--muted)}
   .opts{flex-wrap:nowrap;overflow-x:auto;max-width:100%;scrollbar-width:none}
   .opts::-webkit-scrollbar{display:none}
   .opt .en{display:none}
-  .br{align-items:flex-start}
-  .chap{align-items:flex-end;min-height:130vh;padding-block:55vh 6vh;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+  .season{width:100%}
+  .sbody{padding:14px 16px 14px;gap:10px}
+  .sbody h2{font-size:18px}
+  .sbody p,#sMeta{display:none}
+  .stabs button{padding:8px 4px 9px}
+  .br{flex-direction:row;justify-content:space-between;align-items:center;width:100%}
+  .rpm{display:none}
+  .demo{left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));width:auto;top:auto;transform:none;
+    bottom:max(10px,env(safe-area-inset-bottom,0px));max-height:56vh;max-height:56svh}
   .cpanel{padding:18px 16px 16px;gap:13px}
   .grid{grid-template-columns:minmax(0,1fr)}
   .tl li{grid-template-columns:minmax(0,1fr)}
@@ -196,16 +237,16 @@ footer a{color:var(--muted)}
 </style>
 </head>
 <body>
-<canvas id="gl" aria-label="3D 场景：Unitree Go2 机器狗与机械臂"></canvas>
+<canvas id="gl" aria-label="3D 场景：唱片上的 Unitree Go2 机器狗，指针每转一圈换一个季节"></canvas>
 <div class="vignette" aria-hidden="true"></div>
 <div class="grain" aria-hidden="true"></div>
 <svg id="leaders" aria-hidden="true"></svg>
 <div id="callouts"></div>
 <div class="hint" id="hint">// 点一下我</div>
-<div class="loader" id="loader">// LOADING GO2 · URDF + 7 MESHES<div class="bar"><i id="bar"></i></div></div>
+<div class="loader" id="loader">// LOADING GO2 · URDF + 7 MESHES · SIDE A<div class="bar"><i id="bar"></i></div></div>
 
 <main id="story">
-  <!-- ======= HERO ======= -->
+  <!-- ======= HERO: record + needle + seasons ======= -->
   <section class="hero" data-ch="0" id="top">
     <div class="ui">
       <div class="row2">
@@ -213,13 +254,12 @@ footer a{color:var(--muted)}
           <div class="lbl">// ROBOT PERCEPTION & LEARNING · KIT · KARLSRUHE</div>
           <h1>Yue Cao</h1>
           <p class="tagline">足式机器人学习、3D 感知与 VLA。<br>KIT 计算机科学硕士在读 · 四足跑酷毕设 · 机器人感知研究助理。</p>
-          <a class="scrollcue" href="#ch1">↓ 往下滚动：运动 → 感知 → 表示 → 行动 → 压缩</a>
         </div>
         <div class="right">
           <div>
             <div class="lbl">////// 视图</div>
             <div class="opts v" role="group" aria-label="视图" id="modes">
-              <button class="opt" data-mode="exterior" aria-pressed="true"><span class="zh">外壳</span><span class="en">EXTERIOR</span></button>
+              <button class="opt" data-mode="exterior" aria-pressed="true"><span class="zh">唱片</span><span class="en">RECORD</span></button>
               <button class="opt" data-mode="xray" aria-pressed="false"><span class="zh">透明</span><span class="en">X-RAY</span></button>
               <button class="opt" data-mode="wire" aria-pressed="false"><span class="zh">线框</span><span class="en">WIREFRAME</span></button>
               <button class="opt" data-mode="kin" aria-pressed="false"><span class="zh">骨架</span><span class="en">KINEMATICS</span></button>
@@ -234,176 +274,29 @@ footer a{color:var(--muted)}
         </div>
       </div>
       <div class="row2 bot">
-        <div>
-          <div class="lbl">////// 动作</div>
-          <div class="opts" role="group" aria-label="动作" id="actions">
-            <button class="opt" data-act="idle" aria-pressed="true"><span class="zh">站立</span></button>
-            <button class="opt" data-act="sit" aria-pressed="false"><span class="zh">坐下</span></button>
-            <button class="opt" data-act="shake" aria-pressed="false"><span class="zh">握手</span></button>
-            <button class="opt" data-act="jump" aria-pressed="false"><span class="zh">跳跃</span></button>
-            <button class="opt" data-act="stretch" aria-pressed="false"><span class="zh">伸懒腰</span></button>
-            <button class="opt" data-act="trot" aria-pressed="false"><span class="zh">小跑</span></button>
+        <div class="season" id="season">
+          <div class="stabs" role="group" aria-label="四季 · 四个项目" id="stabs">
+            <button data-s="0" aria-pressed="true"><span class="zh">春</span><span class="en">SPRING</span><i></i></button>
+            <button data-s="1" aria-pressed="false"><span class="zh">夏</span><span class="en">SUMMER</span><i></i></button>
+            <button data-s="2" aria-pressed="false"><span class="zh">秋</span><span class="en">AUTUMN</span><i></i></button>
+            <button data-s="3" aria-pressed="false"><span class="zh">冬</span><span class="en">WINTER</span><i></i></button>
+          </div>
+          <div class="sbody" id="sbody" aria-live="polite">
+            <div>
+              <div class="cno" id="sNo"></div>
+              <h2 id="sTitle"></h2>
+              <div class="cmeta" id="sMeta"></div>
+            </div>
+            <p id="sDesc"></p>
+            <div class="stats" id="sStats"></div>
+            <div class="btns"><button class="btn" id="sOpen">打开交互 demo →</button><button class="btn ghost icon" id="sPlay" aria-label="暂停四季轮转" aria-pressed="false">❚❚</button></div>
           </div>
         </div>
         <div class="br">
-          <div class="opts" role="group" aria-label="涂装" id="finishes">
-            <button class="opt fin" data-finish="graphite" aria-pressed="true"><span class="sw" style="background:#3b3642"></span>Graphite</button>
-            <button class="opt fin" data-finish="copper" aria-pressed="false"><span class="sw" style="background:#b8734f"></span>Copper</button>
-            <button class="opt fin" data-finish="mauve" aria-pressed="false"><span class="sw" style="background:#7f7392"></span>Mauve</button>
-            <button class="opt fin" data-finish="bone" aria-pressed="false"><span class="sw" style="background:#d9d4de"></span>Bone</button>
-          </div>
-          <div class="opts" role="group" aria-label="镜头" id="cams">
-            <button class="opt" data-cam="full" aria-pressed="true"><span class="zh">全身</span></button>
-            <button class="opt" data-cam="head" aria-pressed="false"><span class="zh">头部</span></button>
-            <button class="opt" data-cam="leg" aria-pressed="false"><span class="zh">腿部</span></button>
-            <button class="opt" data-cam="orbit" aria-pressed="false"><span class="zh">环绕 360°</span></button>
-          </div>
+          <div class="lbl rpm">// 指针每转一圈 = 过去一个季节</div>
+          <a class="scrollcue" href="#about">↓ 简历 · 联系方式</a>
         </div>
       </div>
-    </div>
-  </section>
-
-  <!-- ======= 01 LOCOMOTE ======= -->
-  <section class="chap" data-ch="1" id="ch1">
-    <div class="cpanel">
-      <div>
-        <div class="cno">01 / LOCOMOTE · 运动</div>
-        <h2>ParkourBench</h2>
-        <div class="cmeta">硕士毕业设计 · 2026.07 – 至今</div>
-      </div>
-      <p>面向四足机器人敏捷运动的 Sim2Real 评测基准：用低成本、可复现的跑酷赛道评测爬行、跳跃、攀爬，靠机载传感自动评分，不需要动捕。策略在 Isaac Lab 中训练，导出 ONNX / LibTorch 后在 Unitree Go2 上以 50 Hz 闭环运行。</p>
-      <div class="ctl">
-        <div class="lbl">////// 任务</div>
-        <div class="seg" role="group" aria-label="跑酷任务" id="pkKind">
-          <button data-v="crawl" aria-pressed="true">爬行</button>
-          <button data-v="jump" aria-pressed="false">跳跃</button>
-          <button data-v="climb" aria-pressed="false">攀爬</button>
-        </div>
-      </div>
-      <div class="ctl">
-        <div class="lbl">////// 环境 · 策略</div>
-        <div class="btns" style="gap:8px">
-          <div class="seg" role="group" aria-label="仿真或真机" id="pkEnv" style="flex:2;min-width:180px">
-            <button data-v="sim" aria-pressed="true">仿真 Isaac Lab</button>
-            <button data-v="real" aria-pressed="false">真机 Go2</button>
-          </div>
-          <div class="seg" role="group" aria-label="强化学习算法" id="pkAlgo" style="flex:1;min-width:110px">
-            <button data-v="ppo" aria-pressed="true">PPO</button>
-            <button data-v="sac" aria-pressed="false">SAC</button>
-          </div>
-        </div>
-      </div>
-      <div class="bench" aria-live="polite">
-        <span></span><span>运行</span><span>通过率</span><span>跌倒率</span>
-        <span class="rh">仿真</span><b id="bSimN">0</b><b id="bSimP">—</b><b id="bSimF">—</b>
-        <span class="rh">真机</span><b id="bRealN">0</b><b id="bRealP">—</b><b id="bRealF">—</b>
-      </div>
-      <div class="status" id="pkStatus">// CTRL 50 Hz · 准备中</div>
-      <div class="btns"><button class="btn ghost" id="pkReset">重新计数</button></div>
-      <div class="disc">// 交互示意：动作为关键帧动画，成败按设定概率随机抽样，不是真实评测结果。</div>
-    </div>
-  </section>
-
-  <!-- ======= 02 PERCEIVE ======= -->
-  <section class="chap" data-ch="2" id="ch2">
-    <div class="cpanel">
-      <div>
-        <div class="cno">02 / PERCEIVE · 感知</div>
-        <h2>多模态场景感知</h2>
-        <div class="cmeta">研究助理 · KIT · 2025.10 – 至今</div>
-      </div>
-      <p>基于 ROS2 搭建 RGB-D 与 LiDAR 的实时感知管线：硬件同步与联合标定，Open3D 点云预处理，2D–3D 特征反投影，TensorRT / ONNX 加速。再用动态域路由，让语义分割在不同场景下保持鲁棒。</p>
-      <div class="ctl">
-        <div class="lbl">////// 模态</div>
-        <div class="seg" role="group" aria-label="点云着色模态" id="lidarMode">
-          <button data-v="raw" aria-pressed="true">LiDAR</button>
-          <button data-v="depth" aria-pressed="false">深度</button>
-          <button data-v="fused" aria-pressed="false">2D→3D 融合</button>
-        </div>
-      </div>
-      <div class="ctl">
-        <div class="lbl">////// 场景域 · 域路由</div>
-        <div class="seg" role="group" aria-label="场景域" id="domain">
-          <button data-v="fog" aria-pressed="true">雾天</button>
-          <button data-v="night" aria-pressed="false">夜晚</button>
-          <button data-v="snow" aria-pressed="false">雪地</button>
-        </div>
-        <div class="bars" id="router">
-          <div class="r" data-v="fog"><span>seg·fog</span><span class="t"><i></i></span><span class="v"></span></div>
-          <div class="r" data-v="night"><span>seg·night</span><span class="t"><i></i></span><span class="v"></span></div>
-          <div class="r" data-v="snow"><span>seg·snow</span><span class="t"><i></i></span><span class="v"></span></div>
-        </div>
-      </div>
-      <div class="disc">// 交互示意：点云由模拟的 18 线扫描生成，分割与路由权重为演示用，非真实模型输出。</div>
-    </div>
-  </section>
-
-  <!-- ======= 03 REPRESENT ======= -->
-  <section class="chap" data-ch="3" id="ch3">
-    <div class="cpanel">
-      <div>
-        <div class="cno">03 / REPRESENT · 表示</div>
-        <h2>GaussianACT</h2>
-        <div class="cmeta">科研项目 · Intuitive Robots Lab, KIT · 2025.12 – 2026.06</div>
-      </div>
-      <p>把前馈式 3DGS 作为视觉运动策略的 3D 感知前端：多视角图像重建出 1,024 个高斯基元，再通过可学习查询和交叉注意力压缩成 16 个场景 token，保留 3D 几何与遮挡关系。</p>
-      <div class="ctl">
-        <div class="lbl">////// 场景表示</div>
-        <input type="range" id="splat" min="0" max="1" step="0.01" value="0" aria-label="网格与 3D 高斯之间切换">
-        <div class="rng"><span>网格 MESH</span><span>3D GAUSSIANS</span></div>
-      </div>
-      <div class="btns"><button class="btn" id="tokBtn">压缩成场景 token →</button></div>
-      <div class="stats">
-        <div><b id="gCount">1,024</b><span>GAUSSIANS</span></div>
-        <div><b id="tCount">—</b><span>SCENE TOKENS</span></div>
-        <div><b>×64</b><span>COMPRESSION</span></div>
-      </div>
-      <div class="disc">// 交互示意：高斯由物体表面采样，token 分配用空间分箱代替交叉注意力，非真实模型输出。</div>
-    </div>
-  </section>
-
-  <!-- ======= 04 ACT ======= -->
-  <section class="chap" data-ch="4" id="ch4">
-    <div class="cpanel">
-      <div>
-        <div class="cno">04 / ACT · 行动</div>
-        <h2>高斯条件化 ACT 策略</h2>
-        <div class="cmeta">GaussianACT · MuJoCo 操作任务 · 对标 Diffusion Policy</div>
-      </div>
-      <p>策略融合多视角 RGB 和 3D 场景 token，每次预测一整段未来动作（action chunk），而不是一步一步输出。<b style="color:var(--copper);font-weight:500">点击桌上的物体</b>，机械臂会把它放到铜色托盘上，再点一次放回原位。发光的虚影就是当前这一块动作。</p>
-      <div class="stats">
-        <div><b id="chunkK">16</b><span>STEPS / CHUNK</span></div>
-        <div><b id="chunkI">—</b><span>CHUNK</span></div>
-        <div><b id="stepI">—</b><span>STEP</span></div>
-      </div>
-      <div class="status" id="actStatus">// 等待指令：点击一个物体</div>
-      <div class="btns"><button class="btn ghost" id="resetBtn">复位物体</button></div>
-      <div class="disc">// 交互示意：轨迹由脚本规划后按块执行，用来说明 action chunking，不是训练好的策略。</div>
-    </div>
-  </section>
-
-  <!-- ======= 05 COMPRESS ======= -->
-  <section class="chap" data-ch="5" id="ch5">
-    <div class="cpanel">
-      <div>
-        <div class="cno">05 / COMPRESS · 压缩</div>
-        <h2>面向 VLA 的动作 Tokenizer</h2>
-        <div class="cmeta">科研项目 · Intuitive Robots Lab, KIT · 2025.06 – 2025.11</div>
-      </div>
-      <p>先用 B-spline 把动作块重参数化成连续控制点，再用 RVQ 量化成少量离散 token，缩短自回归 VLA 的生成序列。项目里 140 维动作块 → 35 维控制点 → 8 个 token，在 LIBERO 上推理延迟降低 26%。<b style="color:var(--copper);font-weight:500">在下面画一条轨迹试试。</b></p>
-      <canvas class="pad" id="pad" width="760" height="428" aria-label="画轨迹的画板"></canvas>
-      <div class="ctl">
-        <div class="lbl">////// RVQ 层数 = token 数</div>
-        <input type="range" id="kSlider" min="1" max="8" step="1" value="8" aria-label="RVQ 层数">
-        <div class="codes" id="codes"></div>
-      </div>
-      <div class="stats">
-        <div><b id="rawT">140</b><span>ACTION DIMS</span></div>
-        <div><b id="cmpT">34</b><span>CTRL-PT DIMS</span></div>
-        <div><b id="redT">8</b><span>TOKENS</span></div>
-      </div>
-      <div class="btns"><button class="btn" id="drawBtn">让机械臂画出来</button><button class="btn ghost" id="clearBtn">清空画板</button></div>
-      <div class="disc">// 交互示意：2D 轨迹用 17 个控制点拟合；RVQ 用逐层三值残差量化代替学习到的码本。</div>
     </div>
   </section>
 
@@ -441,10 +334,10 @@ footer a{color:var(--muted)}
           <div class="body">
             <h3 id="t-thigh">项目与经历</h3>
             <ul class="tl" style="margin-top:12px">
-              <li><span class="yr">2026.07 – 至今</span><strong><a href="#ch1">ParkourBench</a></strong><span class="d">硕士毕设 · 四足跑酷 Sim2Real 评测基准，Go2 真机 50 Hz 部署</span></li>
-              <li><span class="yr">2025.12 – 2026.06</span><strong><a href="#ch3">GaussianACT</a></strong><span class="d">Intuitive Robots Lab · 1,024 个高斯 → 16 个场景 token 的 3D 视觉运动策略</span></li>
-              <li><span class="yr">2025.10 – 至今</span><strong><a href="#ch2">多模态场景感知</a></strong><span class="d">研究助理 · ROS2 RGB-D/LiDAR 管线、2D–3D 融合、多域分割</span></li>
-              <li><span class="yr">2025.06 – 2025.11</span><strong><a href="#ch5">面向 VLA 的动作 Tokenizer</a></strong><span class="d">Intuitive Robots Lab · B-spline + RVQ，140 维 → 8 个 token，推理延迟 −26%</span></li>
+              <li><span class="yr">2026.07 – 至今</span><strong><a href="#top" data-season="3">ParkourBench</a></strong><span class="d">硕士毕设 · 四足跑酷 Sim2Real 评测基准，Go2 真机 50 Hz 部署</span></li>
+              <li><span class="yr">2025.12 – 2026.06</span><strong><a href="#top" data-season="2">GaussianACT</a></strong><span class="d">Intuitive Robots Lab · 1,024 个高斯 → 16 个场景 token 的 3D 视觉运动策略</span></li>
+              <li><span class="yr">2025.10 – 至今</span><strong><a href="#top" data-season="1">多模态场景感知</a></strong><span class="d">研究助理 · ROS2 RGB-D/LiDAR 管线、2D–3D 融合、多域分割</span></li>
+              <li><span class="yr">2025.06 – 2025.11</span><strong><a href="#top" data-season="0">面向 VLA 的动作 Tokenizer</a></strong><span class="d">Intuitive Robots Lab · B-spline + RVQ，140 维 → 8 个 token，推理延迟 −26%</span></li>
             </ul>
           </div>
         </article>
@@ -477,6 +370,151 @@ footer a{color:var(--muted)}
   </section>
 </main>
 
+<!-- ======= DEMO DOCK: one project panel at a time ======= -->
+<div class="demo" id="demo" hidden>
+  <div class="dtop">
+    <button class="btn ghost" id="dBack">← 回到唱片</button>
+    <div class="seg" role="group" aria-label="GaussianACT 的两个 demo" id="dTabs" hidden>
+      <button data-ch="3" aria-pressed="true">表示 · 3DGS</button>
+      <button data-ch="4" aria-pressed="false">策略 · ACT</button>
+    </div>
+  </div>
+  <!-- ======= 01 LOCOMOTE ======= -->
+  <div class="cpanel" data-ch="1" hidden>
+      <div>
+        <div class="cno">04 / 冬 WINTER · LOCOMOTE 运动</div>
+        <h2>ParkourBench</h2>
+        <div class="cmeta">硕士毕业设计 · 2026.07 – 至今</div>
+      </div>
+      <p>面向四足机器人敏捷运动的 Sim2Real 评测基准：用低成本、可复现的跑酷赛道评测爬行、跳跃、攀爬，靠机载传感自动评分，不需要动捕。策略在 Isaac Lab 中训练，导出 ONNX / LibTorch 后在 Unitree Go2 上以 50 Hz 闭环运行。</p>
+      <div class="ctl">
+        <div class="lbl">////// 任务</div>
+        <div class="seg" role="group" aria-label="跑酷任务" id="pkKind">
+          <button data-v="crawl" aria-pressed="true">爬行</button>
+          <button data-v="jump" aria-pressed="false">跳跃</button>
+          <button data-v="climb" aria-pressed="false">攀爬</button>
+        </div>
+      </div>
+      <div class="ctl">
+        <div class="lbl">////// 环境 · 策略</div>
+        <div class="btns" style="gap:8px">
+          <div class="seg" role="group" aria-label="仿真或真机" id="pkEnv" style="flex:2;min-width:180px">
+            <button data-v="sim" aria-pressed="true">仿真 Isaac Lab</button>
+            <button data-v="real" aria-pressed="false">真机 Go2</button>
+          </div>
+          <div class="seg" role="group" aria-label="强化学习算法" id="pkAlgo" style="flex:1;min-width:110px">
+            <button data-v="ppo" aria-pressed="true">PPO</button>
+            <button data-v="sac" aria-pressed="false">SAC</button>
+          </div>
+        </div>
+      </div>
+      <div class="bench" aria-live="polite">
+        <span></span><span>运行</span><span>通过率</span><span>跌倒率</span>
+        <span class="rh">仿真</span><b id="bSimN">0</b><b id="bSimP">—</b><b id="bSimF">—</b>
+        <span class="rh">真机</span><b id="bRealN">0</b><b id="bRealP">—</b><b id="bRealF">—</b>
+      </div>
+      <div class="status" id="pkStatus">// CTRL 50 Hz · 准备中</div>
+      <div class="btns"><button class="btn ghost" id="pkReset">重新计数</button></div>
+      <div class="disc">// 交互示意：动作为关键帧动画，成败按设定概率随机抽样，不是真实评测结果。</div>
+  </div>
+
+  <!-- ======= 02 PERCEIVE ======= -->
+  <div class="cpanel" data-ch="2" hidden>
+      <div>
+        <div class="cno">02 / 夏 SUMMER · PERCEIVE 感知</div>
+        <h2>多模态场景感知</h2>
+        <div class="cmeta">研究助理 · KIT · 2025.10 – 至今</div>
+      </div>
+      <p>基于 ROS2 搭建 RGB-D 与 LiDAR 的实时感知管线：硬件同步与联合标定，Open3D 点云预处理，2D–3D 特征反投影，TensorRT / ONNX 加速。再用动态域路由，让语义分割在不同场景下保持鲁棒。</p>
+      <div class="ctl">
+        <div class="lbl">////// 模态</div>
+        <div class="seg" role="group" aria-label="点云着色模态" id="lidarMode">
+          <button data-v="raw" aria-pressed="true">LiDAR</button>
+          <button data-v="depth" aria-pressed="false">深度</button>
+          <button data-v="fused" aria-pressed="false">2D→3D 融合</button>
+        </div>
+      </div>
+      <div class="ctl">
+        <div class="lbl">////// 场景域 · 域路由</div>
+        <div class="seg" role="group" aria-label="场景域" id="domain">
+          <button data-v="fog" aria-pressed="true">雾天</button>
+          <button data-v="night" aria-pressed="false">夜晚</button>
+          <button data-v="snow" aria-pressed="false">雪地</button>
+        </div>
+        <div class="bars" id="router">
+          <div class="r" data-v="fog"><span>seg·fog</span><span class="t"><i></i></span><span class="v"></span></div>
+          <div class="r" data-v="night"><span>seg·night</span><span class="t"><i></i></span><span class="v"></span></div>
+          <div class="r" data-v="snow"><span>seg·snow</span><span class="t"><i></i></span><span class="v"></span></div>
+        </div>
+      </div>
+      <div class="disc">// 交互示意：点云由模拟的 18 线扫描生成，分割与路由权重为演示用，非真实模型输出。</div>
+  </div>
+
+  <!-- ======= 03 REPRESENT ======= -->
+  <div class="cpanel" data-ch="3" hidden>
+      <div>
+        <div class="cno">03 / 秋 AUTUMN · REPRESENT 表示</div>
+        <h2>GaussianACT</h2>
+        <div class="cmeta">科研项目 · Intuitive Robots Lab, KIT · 2025.12 – 2026.06</div>
+      </div>
+      <p>把前馈式 3DGS 作为视觉运动策略的 3D 感知前端：多视角图像重建出 1,024 个高斯基元，再通过可学习查询和交叉注意力压缩成 16 个场景 token，保留 3D 几何与遮挡关系。</p>
+      <div class="ctl">
+        <div class="lbl">////// 场景表示</div>
+        <input type="range" id="splat" min="0" max="1" step="0.01" value="0" aria-label="网格与 3D 高斯之间切换">
+        <div class="rng"><span>网格 MESH</span><span>3D GAUSSIANS</span></div>
+      </div>
+      <div class="btns"><button class="btn" id="tokBtn">压缩成场景 token →</button></div>
+      <div class="stats">
+        <div><b id="gCount">1,024</b><span>GAUSSIANS</span></div>
+        <div><b id="tCount">—</b><span>SCENE TOKENS</span></div>
+        <div><b>×64</b><span>COMPRESSION</span></div>
+      </div>
+      <div class="disc">// 交互示意：高斯由物体表面采样，token 分配用空间分箱代替交叉注意力，非真实模型输出。</div>
+  </div>
+
+  <!-- ======= 04 ACT ======= -->
+  <div class="cpanel" data-ch="4" hidden>
+      <div>
+        <div class="cno">03 / 秋 AUTUMN · ACT 行动</div>
+        <h2>高斯条件化 ACT 策略</h2>
+        <div class="cmeta">GaussianACT · MuJoCo 操作任务 · 对标 Diffusion Policy</div>
+      </div>
+      <p>策略融合多视角 RGB 和 3D 场景 token，每次预测一整段未来动作（action chunk），而不是一步一步输出。<b style="color:var(--copper);font-weight:500">点击桌上的物体</b>，机械臂会把它放到铜色托盘上，再点一次放回原位。发光的虚影就是当前这一块动作。</p>
+      <div class="stats">
+        <div><b id="chunkK">16</b><span>STEPS / CHUNK</span></div>
+        <div><b id="chunkI">—</b><span>CHUNK</span></div>
+        <div><b id="stepI">—</b><span>STEP</span></div>
+      </div>
+      <div class="status" id="actStatus">// 等待指令：点击一个物体</div>
+      <div class="btns"><button class="btn ghost" id="resetBtn">复位物体</button></div>
+      <div class="disc">// 交互示意：轨迹由脚本规划后按块执行，用来说明 action chunking，不是训练好的策略。</div>
+  </div>
+
+  <!-- ======= 05 COMPRESS ======= -->
+  <div class="cpanel" data-ch="5" hidden>
+      <div>
+        <div class="cno">01 / 春 SPRING · COMPRESS 压缩</div>
+        <h2>面向 VLA 的动作 Tokenizer</h2>
+        <div class="cmeta">科研项目 · Intuitive Robots Lab, KIT · 2025.06 – 2025.11</div>
+      </div>
+      <p>先用 B-spline 把动作块重参数化成连续控制点，再用 RVQ 量化成少量离散 token，缩短自回归 VLA 的生成序列。项目里 140 维动作块 → 35 维控制点 → 8 个 token，在 LIBERO 上推理延迟降低 26%。<b style="color:var(--copper);font-weight:500">在下面画一条轨迹试试。</b></p>
+      <canvas class="pad" id="pad" width="760" height="428" aria-label="画轨迹的画板"></canvas>
+      <div class="ctl">
+        <div class="lbl">////// RVQ 层数 = token 数</div>
+        <input type="range" id="kSlider" min="1" max="8" step="1" value="8" aria-label="RVQ 层数">
+        <div class="codes" id="codes"></div>
+      </div>
+      <div class="stats">
+        <div><b id="rawT">140</b><span>ACTION DIMS</span></div>
+        <div><b id="cmpT">34</b><span>CTRL-PT DIMS</span></div>
+        <div><b id="redT">8</b><span>TOKENS</span></div>
+      </div>
+      <div class="btns"><button class="btn" id="drawBtn">让机械臂画出来</button><button class="btn ghost" id="clearBtn">清空画板</button></div>
+      <div class="disc">// 交互示意：2D 轨迹用 17 个控制点拟合；RVQ 用逐层三值残差量化代替学习到的码本。</div>
+  </div>
+</div>
+<div id="blink" aria-hidden="true"></div>
+
 <div class="panel" id="panel" hidden role="dialog" aria-labelledby="panel-title">
   <button class="close" id="panel-close" aria-label="关闭">✕</button>
   <div id="panel-body"></div>
@@ -496,6 +534,9 @@ const V=new THREE.Vector3(), V2=new THREE.Vector3(), V3=new THREE.Vector3();
 const ease=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
 const damp=(dt,r)=>1-Math.exp(-dt*r);
 let clock=0,last=performance.now(),chapter=0;
+const R=3.0;                                   // record radius (scene units); the record top is the floor, y=0
+const SEASON_T=10;                             // seconds per needle revolution = one season
+let demoOn=false;                              // true while a project demo panel is open
 
 /* ================= renderer / scene ================= */
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
@@ -504,7 +545,7 @@ renderer.outputEncoding=THREE.sRGBEncoding;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
 renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 const scene=new THREE.Scene();
-scene.fog=new THREE.FogExp2(0x8e889c,.06);
+scene.fog=new THREE.FogExp2(0xf8e3e8,.03);
 const camera=new THREE.PerspectiveCamera(30,1,.05,140);
 const controls=new THREE.OrbitControls(camera,canvas);
 controls.enableDamping=true; controls.enablePan=false; controls.enableZoom=false;
@@ -513,13 +554,13 @@ if(coarse){ controls.enabled=false; canvas.style.touchAction='pan-y'; }
 
 const sky=new THREE.Mesh(new THREE.SphereGeometry(80,32,16),new THREE.ShaderMaterial({
   side:THREE.BackSide,depthWrite:false,fog:false,
-  uniforms:{top:{value:new THREE.Color(0x4c4760)},hor:{value:new THREE.Color(0xa59fb3)}},
+  uniforms:{top:{value:new THREE.Color(0xf2bfcc)},hor:{value:new THREE.Color(0xfdeef1)}},
   vertexShader:'varying vec3 p; void main(){ p=normalize(position); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }',
   fragmentShader:'uniform vec3 top; uniform vec3 hor; varying vec3 p; void main(){ float t=smoothstep(-.05,.6,p.y); gl_FragColor=vec4(mix(hor,top,t),1.); }'
 })); scene.add(sky);
 const hemi=new THREE.HemisphereLight(0xcfc8e2,0x6a6377,.85); scene.add(hemi);
 const key=new THREE.DirectionalLight(0xfff0e4,1.35); key.position.set(2.5,4.4,2.4); key.castShadow=true;
-key.shadow.mapSize.set(2048,2048); Object.assign(key.shadow.camera,{left:-2.2,right:2.2,top:2.2,bottom:-2.2,near:.5,far:14});
+key.shadow.mapSize.set(2048,2048); Object.assign(key.shadow.camera,{left:-3.8,right:3.8,top:3.8,bottom:-3.8,near:.5,far:18});
 key.shadow.radius=5; key.shadow.bias=-.0004; key.shadow.normalBias=.01; scene.add(key);
 const rim=new THREE.DirectionalLight(0xe39a69,1.6); rim.position.set(-3.2,2.2,-2.4); scene.add(rim);
 const glowL=new THREE.PointLight(0xffb98e,.25,3); glowL.position.set(0,.7,0); scene.add(glowL);
@@ -529,50 +570,227 @@ function hash(x,y){ const s=Math.sin(x*127.1+y*311.7)*43758.5453; return s-Math.
 function vn(x,y){ const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi,u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf);
   const a=hash(xi,yi),b=hash(xi+1,yi),c=hash(xi,yi+1),d=hash(xi+1,yi+1); return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v; }
 function fbm(x,y,o){ let s=0,a=.5,f=1; for(let i=0;i<o;i++){ s+=a*vn(x*f,y*f); f*=2.07; a*=.5; } return s; }
-function heightAt(x,z){
-  const r=Math.hypot(x,z),m=THREE.MathUtils.smoothstep(r,2.4,13);
+function terrainH(x,z){                       // meadow around the record, hills further out
+  const r=Math.hypot(x,z),m=THREE.MathUtils.smoothstep(r,R+2.6,17);
   const fine=(fbm(x*1.3,z*1.3,3)-.5)*.04;
-  if(m<=0) return Math.max(-.2,0)+fine-.01;
+  if(m<=0) return fine-.08;
   const big=(fbm(x*.07+3,z*.07-1,5)-.35)*15*m, ridge=Math.pow(Math.abs(fbm(x*.16,z*.16,4)-.5)*2,1.5)*3*m;
-  return Math.max(-.2,big+ridge)+fine-.01;
+  return Math.max(-.2,big+ridge)+fine-.08;
 }
-const terrainMat=new THREE.MeshStandardMaterial({color:0x8a8496,roughness:1});
+function heightAt(x,z){ return Math.hypot(x,z)<R?0:terrainH(x,z); }   // what the LiDAR sees: record top, then terrain
+const terrainMat=new THREE.MeshStandardMaterial({color:new THREE.Color(0xe2b6c3).convertSRGBToLinear(),roughness:1});
 (function(){
   const g=new THREE.PlaneGeometry(110,110,240,240); g.rotateX(-Math.PI/2);
   const pos=g.attributes.position;
-  for(let i=0;i<pos.count;i++) pos.setY(i,heightAt(pos.getX(i),pos.getZ(i)));
+  for(let i=0;i<pos.count;i++) pos.setY(i,terrainH(pos.getX(i),pos.getZ(i)));
   g.computeVertexNormals();
   const t=new THREE.Mesh(g,terrainMat); t.receiveShadow=true; scene.add(t);
 })();
-const glowDisc=(function(){
-  const c=document.createElement('canvas'); c.width=c.height=256; const x=c.getContext('2d');
-  const gr=x.createRadialGradient(128,128,0,128,128,128); gr.addColorStop(0,'rgba(255,214,186,.14)'); gr.addColorStop(.55,'rgba(230,160,120,.04)'); gr.addColorStop(1,'rgba(230,160,120,0)');
-  x.fillStyle=gr; x.fillRect(0,0,256,256);
-  const d=new THREE.Mesh(new THREE.CircleGeometry(1.4,64),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}));
-  d.rotation.x=-Math.PI/2; d.position.y=.035; scene.add(d); return d;
-})();
-const DUST=700,dpos=new Float32Array(DUST*3),dsp=[];
-for(let i=0;i<DUST;i++){ dpos[i*3]=(Math.random()-.5)*14; dpos[i*3+1]=Math.random()*5; dpos[i*3+2]=(Math.random()-.5)*14; dsp.push(.05+Math.random()*.12); }
-const dgeo=new THREE.BufferGeometry(); dgeo.setAttribute('position',new THREE.BufferAttribute(dpos,3));
-const dustMat=new THREE.PointsMaterial({color:0xf3eef8,size:.022,transparent:true,opacity:.7,depthWrite:false});
-scene.add(new THREE.Points(dgeo,dustMat));
+/* ================= the record (floor) ================= */
+const maxAniso=renderer.capabilities.getMaxAnisotropy();
+const LABEL_R=R*.33, UPV=new THREE.Vector3(0,1,0);
+function canvasTex(w,h,draw){ const c=document.createElement('canvas'); c.width=w; c.height=h; draw(c.getContext('2d'),w,h); const t=new THREE.CanvasTexture(c); t.encoding=THREE.sRGBEncoding; t.anisotropy=maxAniso; return t; }
+const grooveTex=canvasTex(2048,2048,(x,w)=>{
+  const c=w/2,px=c/R,r0=LABEL_R*px+8,r1=R*px-14, gaps=[1,2,3].map(k=>r0+(r1-r0)*k/4);   // four tracks = four seasons
+  x.fillStyle='#0c0c0f'; x.fillRect(0,0,w,w); x.lineWidth=1;
+  let i=0; for(let r=r0;r<r1;r+=1.7,i++){
+    const gap=gaps.some(g=>Math.abs(r-g)<8);
+    x.strokeStyle=gap?'#050507':(i%2?'#1d1d22':'#0a0a0c'); x.globalAlpha=gap?1:.55+.45*Math.random();
+    x.beginPath(); x.arc(c,c,r,0,Math.PI*2); x.stroke();
+  }
+  x.globalAlpha=1; x.lineWidth=14; x.strokeStyle='#050507';
+  x.beginPath(); x.arc(c,c,r1+5,0,Math.PI*2); x.stroke(); x.beginPath(); x.arc(c,c,r0-3,0,Math.PI*2); x.stroke();
+});
+const record=new THREE.Group(); scene.add(record);
+const recSide=new THREE.MeshStandardMaterial({color:0x0b0b0d,roughness:.5,metalness:.2});
+const disc=new THREE.Mesh(new THREE.CylinderGeometry(R,R,.05,160,1,false),[recSide,new THREE.MeshLambertMaterial({map:grooveTex}),recSide]);   // matte top: the sheen overlay does the shine, so coloured rim lights can't turn it bronze
+disc.position.y=-.025; disc.receiveShadow=true; disc.castShadow=true; record.add(disc);
+const sheenTex=canvasTex(1024,1024,(x,w)=>{                   // static light streaks across the grooves
+  if(!x.createConicGradient) return;
+  const c=w/2,g=x.createConicGradient(0,c,c);
+  [[0,0],[.035,.55],[.08,0],[.5,0],[.535,.55],[.58,0],[1,0]].forEach(([o,a])=>g.addColorStop(o,`rgba(255,255,255,${a})`));
+  x.fillStyle=g; x.fillRect(0,0,w,w); x.globalCompositeOperation='destination-in';
+  const rg=x.createRadialGradient(c,c,LABEL_R/R*c,c,c,c); rg.addColorStop(0,'rgba(0,0,0,0)'); rg.addColorStop(.1,'#000'); rg.addColorStop(.96,'#000'); rg.addColorStop(1,'rgba(0,0,0,0)');
+  x.fillStyle=rg; x.fillRect(0,0,w,w);
+});
+const sheen=new THREE.Mesh(new THREE.CircleGeometry(R,128),new THREE.MeshBasicMaterial({map:sheenTex,transparent:true,opacity:.34,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}));
+sheen.rotation.set(-Math.PI/2,0,.9); sheen.position.y=.002; record.add(sheen);
+const labelCanvas=document.createElement('canvas'); labelCanvas.width=labelCanvas.height=1024;
+const labelTex=new THREE.CanvasTexture(labelCanvas); labelTex.encoding=THREE.sRGBEncoding; labelTex.anisotropy=maxAniso;
+const label=new THREE.Mesh(new THREE.CircleGeometry(LABEL_R,96),new THREE.MeshStandardMaterial({map:labelTex,roughness:.75}));
+label.rotation.x=-Math.PI/2; label.position.y=.003; label.receiveShadow=true; record.add(label);
+function drawLabel(se){
+  const x=labelCanvas.getContext('2d'),w=1024,c=w/2; x.clearRect(0,0,w,w);
+  x.fillStyle=se.label; x.beginPath(); x.arc(c,c,c,0,Math.PI*2); x.fill();
+  x.strokeStyle=se.accentD; x.lineWidth=12; x.beginPath(); x.arc(c,c,c-28,0,Math.PI*2); x.stroke();
+  x.lineWidth=2.5; x.beginPath(); x.arc(c,c,c-52,0,Math.PI*2); x.stroke();
+  x.fillStyle=se.accentD; x.textAlign='center'; x.textBaseline='middle';
+  x.font='700 96px Unbounded, "Noto Sans SC", sans-serif'; x.fillText('YUE CAO',c,c-245);
+  x.font='500 30px "JetBrains Mono", monospace'; x.fillText('SIDE A · FOUR SEASONS · 33⅓ RPM',c,c-160);
+  x.font='700 160px "Noto Sans SC", sans-serif'; x.fillText(se.zh,c-200,c+8);
+  x.font='700 112px Unbounded, sans-serif'; x.fillText(se.no,c+205,c+8);
+  x.font='700 42px "Noto Sans SC", sans-serif'; x.fillText(se.title,c,c+170);
+  x.font='500 30px "JetBrains Mono", monospace'; x.fillText(`${se.en} · ${se.period}`,c,c+232);
+  x.fillStyle='#16141a'; x.beginPath(); x.arc(c,c,34,0,Math.PI*2); x.fill();
+  labelTex.needsUpdate=true;
+}
+const metal=new THREE.MeshStandardMaterial({color:0xdedce2,roughness:.24,metalness:.9});
+const accentMat=new THREE.MeshBasicMaterial({color:new THREE.Color(0xee8fab).convertSRGBToLinear(),toneMapped:false,fog:false});
+const spindle=new THREE.Mesh(new THREE.CylinderGeometry(.03,.034,.17,20),metal); spindle.position.y=.085; spindle.castShadow=true; record.add(spindle);
 
-/* ================= scene domains (chapter 01) ================= */
+/* the needle: a clock hand pivoting on the spindle, sweeping just above the grooves (one revolution = one season) */
+const needle=new THREE.Group(); record.add(needle);
+const NL=R-.12;
+(function(){
+  const add=(g,m,x,y)=>{ const o=new THREE.Mesh(g,m); o.position.set(x,y,0); o.castShadow=true; needle.add(o); return o; };
+  add(new THREE.CylinderGeometry(.15,.17,.07,40),metal,0,.035);
+  add(new THREE.CylinderGeometry(.09,.09,.012,32),accentMat,0,.077).castShadow=false;
+  add(new THREE.BoxGeometry(NL-.1,.03,.05),metal,.1+(NL-.1)/2,.072);
+  add(new THREE.BoxGeometry(NL-.32,.006,.018),accentMat,.2+(NL-.32)/2,.09).castShadow=false;
+  add(new THREE.BoxGeometry(.2,.06,.11),new THREE.MeshStandardMaterial({color:0x1d1b22,roughness:.4,metalness:.6}),NL-.04,.075);
+  add(new THREE.SphereGeometry(.032,16,10),accentMat,NL+.075,.075).castShadow=false;
+})();
+const sweepMat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false,
+  uniforms:{uCol:{value:accentMat.color},uLen:{value:.95},uOp:{value:.6}},
+  vertexShader:'varying vec2 vP; void main(){ vP=position.xy; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }',
+  fragmentShader:`uniform vec3 uCol; uniform float uLen; uniform float uOp; varying vec2 vP;
+    void main(){ float a=atan(vP.y,vP.x), r=length(vP), t=clamp(a/uLen,0.,1.);
+      float al=pow(1.-t,3.)*smoothstep(${(LABEL_R*.92).toFixed(3)},${(LABEL_R+.45).toFixed(3)},r)*(1.-smoothstep(${(R-.1).toFixed(3)},${R.toFixed(3)},r));
+      gl_FragColor=vec4(uCol,al*uOp); }`});
+const sweep=new THREE.Mesh(new THREE.CircleGeometry(R,80,0,.95),sweepMat); sweep.rotation.x=-Math.PI/2; sweep.position.y=.004; needle.add(sweep);
+
+/* ================= the tree (procedural; foliage follows the season) ================= */
+const tree=new THREE.Group(); tree.position.set(-1.0,-.08,-7.2); tree.rotation.y=.5; tree.scale.setScalar(.85); scene.add(tree);
+(function(){ const t=canvasTex(128,128,(x)=>{ const g=x.createRadialGradient(64,64,0,64,64,64); g.addColorStop(0,'rgba(40,24,30,.42)'); g.addColorStop(.5,'rgba(40,24,30,.16)'); g.addColorStop(1,'rgba(40,24,30,0)'); x.fillStyle=g; x.fillRect(0,0,128,128); });
+  const m=new THREE.Mesh(new THREE.CircleGeometry(2.6,48),new THREE.MeshBasicMaterial({map:t,transparent:true,depthWrite:false})); m.rotation.x=-Math.PI/2; m.position.set(-1.0,terrainH(-1,-7.2)+.02,-7.2); scene.add(m); })();
+let seed=11; const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+const BR=[],TIPS=[];
+function grow(p,dir,len,rad,d){
+  const end=p.clone().addScaledVector(dir,len); BR.push({p,dir,len,rad,d});
+  if(d===0){ TIPS.push({p:end,s:1}); return; }
+  if(d<=2) TIPS.push({p:p.clone().lerp(end,.55),s:.75});
+  const n=d>=4?2:3, perp=new THREE.Vector3().crossVectors(dir,Math.abs(dir.y)>.95?new THREE.Vector3(1,0,0):UPV).normalize(), off=rnd()*6.283;
+  for(let k=0;k<n;k++){
+    const ax=perp.clone().applyAxisAngle(dir,off+k*6.283/n+(rnd()-.5)*.6);
+    const nd=dir.clone().applyAxisAngle(ax,.42+rnd()*.38); nd.y+=.16; nd.normalize();
+    grow(end,nd,len*(.7+rnd()*.12),rad*.64,d-1);
+  }
+}
+grow(new THREE.Vector3(),new THREE.Vector3(.06,1,0).normalize(),1.55,.17,5);
+const TM=new THREE.Matrix4(),TQ=new THREE.Quaternion(),TS=new THREE.Vector3(),TP=new THREE.Vector3(),TC=new THREE.Color();
+(function(){
+  const g=new THREE.CylinderGeometry(.66,1,1,7,1); g.translate(0,.5,0);
+  const m=new THREE.InstancedMesh(g,new THREE.MeshStandardMaterial({color:new THREE.Color(0x3a2a24).convertSRGBToLinear(),roughness:.95}),BR.length); m.castShadow=m.receiveShadow=true;
+  BR.forEach((b,i)=>{ TQ.setFromUnitVectors(UPV,b.dir); TS.set(b.rad,b.len*1.04,b.rad); TM.compose(b.p,TQ,TS); m.setMatrixAt(i,TM); });
+  tree.add(m);
+})();
+const LV=[];
+TIPS.forEach(t=>{ const n=t.s<1?5:8; for(let k=0;k<n;k++){
+  const o=new THREE.Vector3(rnd()-.5,rnd()-.5,rnd()-.5).multiplyScalar(.62*t.s);
+  LV.push({p:t.p.clone().add(o),s0:.65+rnd()*.7,keep:rnd(),hue:rnd(),cs:0,col:new THREE.Color(1,1,1),q:new THREE.Quaternion().setFromEuler(new THREE.Euler(rnd()*6,rnd()*6,rnd()*6)),ph:rnd()*6.283}); } });
+const leafMesh=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,0),new THREE.MeshStandardMaterial({roughness:.75,flatShading:true}),LV.length);
+leafMesh.castShadow=true; LV.forEach((l,i)=>leafMesh.setColorAt(i,l.col)); tree.add(leafMesh);
+const SNB=BR.filter(b=>b.d>=1&&b.dir.y<.92);
+const snowMesh=new THREE.InstancedMesh(new THREE.SphereGeometry(1,10,6),new THREE.MeshStandardMaterial({color:0xffffff,roughness:.9,emissive:0xdfe8f5,emissiveIntensity:.3}),SNB.length);
+tree.add(snowMesh); let snowK=0,snowShown=-1;
+function updateTree(dt,E){
+  const L=E.leaf;
+  for(let i=0;i<LV.length;i++){ const l=LV[i];
+    const ts=l.keep<L.d?L.s*l.s0:0; l.cs+=(ts-l.cs)*damp(dt,1.4+l.keep*2.4);
+    l.col.lerp(L.cc[Math.floor(l.hue*L.cc.length)],damp(dt,1.2+l.hue*1.5));
+    const w=reduce?0:.025*Math.sin(clock*1.5+l.ph);
+    TP.set(l.p.x+w,l.p.y+w*.4,l.p.z+w*.6); TS.setScalar(Math.max(l.cs,1e-4)); TM.compose(TP,l.q,TS);
+    leafMesh.setMatrixAt(i,TM); leafMesh.setColorAt(i,l.col);
+  }
+  leafMesh.instanceMatrix.needsUpdate=true; leafMesh.instanceColor.needsUpdate=true;
+  snowK+=(E.snow-snowK)*damp(dt,1.1);
+  if(Math.abs(snowK-snowShown)>.002){ snowShown=snowK; snowMesh.visible=snowK>.01;
+    SNB.forEach((b,i)=>{ TQ.setFromUnitVectors(UPV,b.dir); TP.copy(b.p).addScaledVector(b.dir,b.len*.5); TP.y+=b.rad*.62;
+      TS.set(b.rad*1.08*snowK,b.len*.5*Math.min(1,snowK*1.6),b.rad*1.08*snowK); TM.compose(TP,TQ,TS); snowMesh.setMatrixAt(i,TM); });
+    snowMesh.instanceMatrix.needsUpdate=true; }
+  if(!reduce) tree.rotation.z=.006*Math.sin(clock*.7);
+}
+
+/* ================= falling particles: petals / pollen / leaves / snow ================= */
+function spriteTex(kind){ return canvasTex(64,64,x=>{ x.translate(32,32);
+  if(kind==='snow'||kind==='dot'){ const g=x.createRadialGradient(0,0,0,0,0,30); g.addColorStop(0,'#fff'); g.addColorStop(kind==='dot'?.22:.45,'rgba(255,255,255,.85)'); g.addColorStop(1,'rgba(255,255,255,0)'); x.fillStyle=g; x.fillRect(-32,-32,64,64); }
+  else if(kind==='petal'){ x.rotate(.6); x.fillStyle='#fff'; x.beginPath(); x.ellipse(0,2,13,24,0,0,Math.PI*2); x.fill(); x.globalCompositeOperation='destination-out'; x.beginPath(); x.arc(0,-25,7,0,Math.PI*2); x.fill(); }
+  else { x.rotate(-.7); x.fillStyle='#fff'; x.beginPath(); x.moveTo(0,-28); x.quadraticCurveTo(21,0,0,28); x.quadraticCurveTo(-21,0,0,-28); x.fill();
+    x.strokeStyle='rgba(0,0,0,.28)'; x.lineWidth=2; x.beginPath(); x.moveTo(0,-24); x.lineTo(0,26); x.stroke(); }
+}); }
+const SPRITES={petal:spriteTex('petal'),leaf:spriteTex('leaf'),snow:spriteTex('snow'),dot:spriteTex('dot')};
+const PN=900,PB={x:[-8,8],y:6.5,z:[-9,4.5]},ppos=new Float32Array(PN*3),pdat=[];
+const prand=(a,b)=>a+Math.random()*(b-a);
+for(let i=0;i<PN;i++){ ppos[i*3]=prand(...PB.x); ppos[i*3+1]=Math.random()*PB.y; ppos[i*3+2]=prand(...PB.z); pdat.push({sp:.6+Math.random()*.8,ph:Math.random()*6.283}); }
+const pgeo=new THREE.BufferGeometry(); pgeo.setAttribute('position',new THREE.BufferAttribute(ppos,3));
+const partMat=new THREE.PointsMaterial({size:.1,map:SPRITES.petal,color:0xffc9d6,transparent:true,opacity:0,depthWrite:false,alphaTest:.01});
+const parts=new THREE.Points(pgeo,partMat); parts.frustumCulled=false; scene.add(parts);
+let partStyle='petal',partOp=0;
+function updateParticles(dt,P){
+  if(P.tex!==partStyle){ partOp-=dt*2.4; if(partOp<=0){ partOp=0; partStyle=P.tex; partMat.map=SPRITES[P.tex]; partMat.needsUpdate=true; } }
+  else partOp+=(P.op-partOp)*damp(dt,2);
+  partMat.opacity=Math.max(0,partOp); partMat.color.lerp(P.cc,damp(dt,2)); partMat.size+=(P.size-partMat.size)*damp(dt,2);
+  if(reduce) return;
+  const a=pgeo.attributes.position.array;
+  for(let i=0;i<PN;i++){ const d=pdat[i],j=i*3; let y=a[j+1]-P.fall*d.sp*dt;
+    a[j]+=(Math.sin(clock*.8+d.ph)*P.sway+.1)*dt; a[j+2]+=Math.cos(clock*.6+d.ph*1.7)*P.sway*.5*dt;
+    if(y<0){ y=PB.y; a[j]=prand(...PB.x); a[j+2]=prand(...PB.z); } else if(y>PB.y){ y=0; }
+    if(a[j]>PB.x[1]) a[j]=PB.x[0]; a[j+1]=y; }
+  pgeo.attributes.position.needsUpdate=true;
+}
+
+/* ================= seasons (chronological: one project per season) ================= */
+const SEASONS=[
+  {zh:'春',en:'SPRING',no:'01',ch:5,accent:'#ee8fab',accentD:'#b04769',label:'#f8d6df',sky:'#fbe9ee',
+   env:{fog:0xf8e1e7,dens:.028,top:0xf0b9c8,hor:0xfdeef1,hs:0xffeef3,hg:0x9b7380,hi:.72,ki:1.35,kc:0xfff0ec,ri:.6,rc:0xf4a6bd,ter:0xe2b6c3,
+     leaf:{d:.88,s:.075,c:['#f9c9d6','#f4a9bd','#fde6ec','#ffffff','#f7b8c9']},snow:0,part:{tex:'petal',color:0xffc9d6,size:.1,op:.95,fall:.32,sway:.45}},
+   period:'2025.06 – 2025.11',title:'面向 VLA 的动作 Tokenizer',meta:'科研项目 · Intuitive Robots Lab, KIT',
+   desc:'B-spline 把一整段动作压成连续控制点，RVQ 再把控制点量化成 8 个离散 token，让自回归 VLA 生成更短的动作序列。',
+   stats:[['140','ACTION DIMS'],['8','TOKENS'],['−26%','推理延迟 · LIBERO']]},
+  {zh:'夏',en:'SUMMER',no:'02',ch:2,accent:'#72c283',accentD:'#2d7843',label:'#d6ecd0',sky:'#e8f4e2',
+   env:{fog:0xe2f0db,dens:.026,top:0x98cfa6,hor:0xeef7e4,hs:0xf6fff0,hg:0x6d8a60,hi:.7,ki:1.45,kc:0xfff6dc,ri:.5,rc:0xc8e89a,ter:0x9cc785,
+     leaf:{d:1,s:.13,c:['#5f9e52','#7bb563','#4a8746','#94c86f','#6aa85a']},snow:0,part:{tex:'dot',color:0xf4f1a6,size:.06,op:.85,fall:-.05,sway:.3}},
+   period:'2025.10 – 至今',title:'多模态场景感知',meta:'研究助理 · KIT',
+   desc:'ROS2 上的 RGB-D + LiDAR 实时感知管线：硬件同步与标定、2D→3D 特征反投影，再用域路由让分割在雾天、夜晚、雪地都保持鲁棒。',
+   stats:[['RGB-D','+ LIDAR'],['2D→3D','特征融合'],['×3','场景域路由']]},
+  {zh:'秋',en:'AUTUMN',no:'03',ch:3,accent:'#eaab3e',accentD:'#94600f',label:'#f6e2b8',sky:'#fcf0d6',
+   env:{fog:0xf7e7c6,dens:.028,top:0xefbf72,hor:0xfcf0d6,hs:0xfff4df,hg:0x8f6c44,hi:.7,ki:1.4,kc:0xffe6c4,ri:.6,rc:0xf0a24a,ter:0xd8ad62,
+     leaf:{d:.72,s:.115,c:['#f2b53b','#e98a2c','#f6d25a','#cf5a2c','#e9a23a']},snow:0,part:{tex:'leaf',color:0xf2a548,size:.12,op:.95,fall:.42,sway:.6}},
+   period:'2025.12 – 2026.06',title:'GaussianACT',meta:'科研项目 · Intuitive Robots Lab, KIT · MuJoCo',
+   desc:'前馈 3DGS 当视觉运动策略的 3D 前端：多视角图像重建出 1,024 个高斯，压缩成 16 个场景 token，ACT 策略一次预测一整段动作。',
+   stats:[['1,024','GAUSSIANS'],['16','SCENE TOKENS'],['×64','COMPRESSION']]},
+  {zh:'冬',en:'WINTER',no:'04',ch:1,accent:'#8db7e2',accentD:'#38679a',label:'#dbe7f3',sky:'#eef3f9',
+   env:{fog:0xe9eff6,dens:.03,top:0xb3c8df,hor:0xf4f7fb,hs:0xf4f8ff,hg:0x8a98aa,hi:.8,ki:1.3,kc:0xf2f6ff,ri:.6,rc:0xa9c8ee,ter:0xeef3f9,
+     leaf:{d:0,s:0,c:['#ffffff']},snow:1,part:{tex:'snow',color:0xffffff,size:.075,op:1,fall:.4,sway:.25}},
+   period:'2026.07 – 至今',title:'ParkourBench',meta:'硕士毕业设计 · Unitree Go2',
+   desc:'面向四足敏捷运动的 Sim2Real 评测基准：低成本、可复现的跑酷赛道（爬行、跳跃、攀爬），靠机载传感自动评分。Isaac Lab 训练，Go2 真机 50 Hz 闭环。',
+   stats:[['3','爬行 · 跳跃 · 攀爬'],['50 Hz','真机闭环'],['Sim2Real','ISAAC LAB → GO2']]},
+];
+// three r147 reads hex colours as linear: convert material/particle colours so they render as the hex says
+// (sky shader and fog colour are written straight to the screen, so those stay raw)
+const toLin=h=>new THREE.Color(h).convertSRGBToLinear();
+SEASONS.forEach(s=>{ const e=s.env; e.leaf.cc=e.leaf.c.map(toLin); e.terC=toLin(e.ter); e.part.cc=toLin(e.part.color); s.accentC=toLin(s.accent); });
+
+/* ================= scene domains (perception demo overrides the season sky) ================= */
 const DOMAINS={
-  fog:  {fog:0x8e889c,dens:.06, top:0x4c4760,hor:0xa59fb3, hs:0xcfc8e2,hg:0x6a6377,hi:.85, ki:1.35, ri:1.6, ter:0x8a8496, dust:.7},
-  night:{fog:0x1f1d29,dens:.07, top:0x0b0a12,hor:0x2b2738, hs:0x5a5578,hg:0x1c1a24,hi:.45, ki:.35, ri:1.2, ter:0x4a4656, dust:.35},
-  snow: {fog:0xc4c1cd,dens:.065,top:0x8f8ca0,hor:0xd9d6e0, hs:0xf1eef6,hg:0x9a96a6,hi:1.0, ki:1.5, ri:1.0, ter:0xc9c6d2, dust:1.0},
+  fog:  {fog:0x8e889c,dens:.06, top:0x4c4760,hor:0xa59fb3, hs:0xcfc8e2,hg:0x6a6377,hi:.85, ki:1.35,kc:0xfff0e4, ri:1.6,rc:0xe39a69, ter:0x8a8496, part:{tex:'dot',color:0xf3eef8,size:.03,op:.6,fall:.1,sway:.08}},
+  night:{fog:0x1f1d29,dens:.07, top:0x0b0a12,hor:0x2b2738, hs:0x5a5578,hg:0x1c1a24,hi:.45, ki:.35,kc:0xfff0e4, ri:1.2,rc:0xe39a69, ter:0x4a4656, part:{tex:'dot',color:0xf3eef8,size:.03,op:.3,fall:.1,sway:.08}},
+  snow: {fog:0xc4c1cd,dens:.065,top:0x8f8ca0,hor:0xd9d6e0, hs:0xf1eef6,hg:0x9a96a6,hi:1.0, ki:1.5,kc:0xfff0e4, ri:1.0,rc:0xe39a69, ter:0xc9c6d2, part:{tex:'snow',color:0xffffff,size:.05,op:1,fall:.35,sway:.2}},
 };
-let domain='fog';
-const dc={fog:new THREE.Color(),top:new THREE.Color(),hor:new THREE.Color(),hs:new THREE.Color(),hg:new THREE.Color(),ter:new THREE.Color()};
-function updateDomain(dt){
-  const D=DOMAINS[domain],k=damp(dt,3);
-  scene.fog.color.lerp(dc.fog.setHex(D.fog),k); renderer.setClearColor(scene.fog.color);
+Object.values(DOMAINS).forEach(e=>{ e.terC=new THREE.Color(e.ter); e.part.cc=new THREE.Color(e.part.color); });
+let domain='fog', season=0;
+const accentT=toLin(0xee8fab);
+function updateEnv(dt){
+  const SE=SEASONS[season].env, D=(demoOn&&chapter===2)?DOMAINS[domain]:SE, k=damp(dt,1.6);
+  scene.fog.color.lerp(TC.setHex(D.fog),k); renderer.setClearColor(scene.fog.color);
   scene.fog.density+=(D.dens-scene.fog.density)*k;
-  sky.material.uniforms.top.value.lerp(dc.top.setHex(D.top),k); sky.material.uniforms.hor.value.lerp(dc.hor.setHex(D.hor),k);
-  hemi.color.lerp(dc.hs.setHex(D.hs),k); hemi.groundColor.lerp(dc.hg.setHex(D.hg),k); hemi.intensity+=(D.hi-hemi.intensity)*k;
-  key.intensity+=(D.ki-key.intensity)*k; rim.intensity+=(D.ri-rim.intensity)*k;
-  terrainMat.color.lerp(dc.ter.setHex(D.ter),k); dustMat.opacity+=(D.dust-dustMat.opacity)*k;
+  sky.material.uniforms.top.value.lerp(TC.setHex(D.top),k); sky.material.uniforms.hor.value.lerp(TC.setHex(D.hor),k);
+  hemi.color.lerp(TC.setHex(D.hs),k); hemi.groundColor.lerp(TC.setHex(D.hg),k); hemi.intensity+=(D.hi-hemi.intensity)*k;
+  key.color.lerp(TC.setHex(D.kc),k); key.intensity+=(D.ki-key.intensity)*k;
+  rim.color.lerp(TC.setHex(D.rc),k); rim.intensity+=(D.ri-rim.intensity)*k;
+  terrainMat.color.lerp(D.terC,k);
+  accentMat.color.lerp(accentT,k);
+  updateParticles(dt,D.part); updateTree(dt,SE);
 }
 
 /* ================= robot from URDF tree ================= */
@@ -584,7 +802,8 @@ const BASEMAT={
   rubber:()=>new THREE.MeshStandardMaterial({color:0x121115,roughness:.95}),
   accent:()=>new THREE.MeshStandardMaterial({color:0xc27f55,roughness:.28,metalness:.95,emissive:0x5a2c12,emissiveIntensity:.35}),
 };
-const robotRoot=new THREE.Group(); robotRoot.scale.setScalar(S); robotRoot.rotation.x=-Math.PI/2; scene.add(robotRoot);
+const dogRig=new THREE.Group(); scene.add(dogRig);           // world placement: on the record (hero) or at its centre (demos)
+const robotRoot=new THREE.Group(); robotRoot.scale.setScalar(S); robotRoot.rotation.x=-Math.PI/2; dogRig.add(robotRoot);
 const allMats=[],meshes=[],edgeLines=[],skel=[],armMats=[];
 let robot=null; const links={},joints={},linkOfMesh=new Map();
 const skelMats={
@@ -769,7 +988,7 @@ let lidarFade=0;
 function buildLidar(){
   links.base.updateMatrixWorld(true);
   const O=links.base.localToWorld(new THREE.Vector3(.29,0,-.03)), fwd=links.base.localToWorld(new THREE.Vector3(1.29,0,-.03)).sub(O).setY(0).normalize();
-  const pts=[],ranges=[],azs=[],cls=[],fov=[];
+  const pts=[],ranges=[],azs=[],cls=[],fov=[],onRec=[];
   const RINGS=18,AZ=600, HF=.6, VF=.42;
   for(let r=0;r<RINGS;r++){ const el=-.52+r*(.62/(RINGS-1));
     for(let a=0;a<AZ;a++){ const az=a/AZ*Math.PI*2+(r%2)*.002;
@@ -780,7 +999,7 @@ function buildLidar(){
       let lo=prev,hi=t; for(let k=0;k<5;k++){ const m=(lo+hi)/2; const x=O.x+dir.x*m,y=O.y+dir.y*m,z=O.z+dir.z*m; if(y<=heightAt(x,z)) hi=m; else lo=m; }
       const p=V.copy(dir).multiplyScalar(hi).add(O);
       const e=.06, gx=(heightAt(p.x+e,p.z)-heightAt(p.x-e,p.z))/(2*e), gz=(heightAt(p.x,p.z+e)-heightAt(p.x,p.z-e))/(2*e), sl=Math.hypot(gx,gz);
-      pts.push(p.x,p.y+.004,p.z); ranges.push(hi); azs.push(az);
+      pts.push(p.x,p.y+.004,p.z); ranges.push(hi); azs.push(az); onRec.push(Math.hypot(p.x,p.z)<R);
       cls.push(sl<.12?0:(sl<.55?1:2));
       const hd=Math.atan2(dir.z,dir.x)-Math.atan2(fwd.z,fwd.x), hda=Math.atan2(Math.sin(hd),Math.cos(hd));
       fov.push(Math.abs(hda)<HF/2*1.6&&Math.abs(el+.12)<VF?1:0);
@@ -788,7 +1007,7 @@ function buildLidar(){
   }
   const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));
   g.setAttribute('color',new THREE.Float32BufferAttribute(new Array(pts.length).fill(1),3)); g.setAttribute('az',new THREE.Float32BufferAttribute(azs,1));
-  lidar=new THREE.Points(g,lidarMat); lidar.userData={ranges,cls,fov}; lidar.frustumCulled=false; scene.add(lidar);
+  lidar=new THREE.Points(g,lidarMat); lidar.userData={ranges,cls,fov,onRec}; lidar.frustumCulled=false; scene.add(lidar);
   // camera frustum (front camera)
   const F=2.6,w=Math.tan(HF*.8)*F,h=Math.tan(VF*.55)*F, up=new THREE.Vector3(0,1,0), side=new THREE.Vector3().crossVectors(fwd,up).normalize();
   const c=O.clone().add(fwd.clone().multiplyScalar(F)).add(up.clone().multiplyScalar(-.12*F));
@@ -798,14 +1017,15 @@ function buildLidar(){
   colorLidar();
 }
 const CLS=[new THREE.Color(0x3a3150),new THREE.Color(0x7a5fb8),new THREE.Color(0xd0743a)];
+const CLS_REC=new THREE.Color(0xa898d8);
 const DEPTH=[new THREE.Color(0xc8642e),new THREE.Color(0x7a5fb8),new THREE.Color(0x2a2438)];
 function colorLidar(){
-  if(!lidar) return; const c=lidar.geometry.attributes.color, {ranges,cls,fov}=lidar.userData, t=new THREE.Color();
+  if(!lidar) return; const c=lidar.geometry.attributes.color, {ranges,cls,fov,onRec}=lidar.userData, t=new THREE.Color();
   const night=domain==='night';
   for(let i=0;i<ranges.length;i++){
-    if(lidarMode==='raw'){ t.setHex(night?0xd8d0f0:0x2e2838); }
+    if(lidarMode==='raw'){ t.setHex(night||onRec[i]?0xd8d0f0:0x2e2838); }      // light points on the black record
     else if(lidarMode==='depth'){ const u=Math.min(1,ranges[i]/8); if(u<.5) t.copy(DEPTH[0]).lerp(DEPTH[1],u*2); else t.copy(DEPTH[1]).lerp(DEPTH[2],(u-.5)*2); }
-    else { if(fov[i]) t.copy(CLS[cls[i]]); else t.setHex(night?0x4a4458:0xb9b3c6); }
+    else { if(fov[i]) t.copy(onRec[i]&&cls[i]===0?CLS_REC:CLS[cls[i]]); else t.setHex(night||onRec[i]?0x6a6380:0xb9b3c6); }
     c.setXYZ(i,t.r,t.g,t.b);
   }
   c.needsUpdate=true;
@@ -814,7 +1034,7 @@ const ROUTER={fog:[.91,.05,.04],night:[.07,.88,.05],snow:[.06,.03,.91]};
 function setRouter(){ const w=ROUTER[domain]; document.querySelectorAll('#router .r').forEach((r,i)=>{ r.classList.toggle('on',r.dataset.v===domain); r.querySelector('i').style.width=(w[i]*100)+'%'; r.querySelector('.v').textContent=w[i].toFixed(2); }); }
 
 /* ================= view modes (hero) ================= */
-let mode='exterior',explodeTarget=0,explodeT=0,camMode='full',tween=null;
+let mode='exterior',explodeTarget=0,explodeT=0,tween=null;
 function setMode(m,silent){
   mode=m; press('#modes','opt','mode',m);
   if(robot){
@@ -829,7 +1049,8 @@ function setMode(m,silent){
     skel.forEach(s=>s.visible=(m==='xray'||m==='kin'));
   }
   explodeTarget=m==='exploded'?1:0;
-  controls.autoRotate=chapter===0&&(m==='exploded'||camMode==='orbit')&&!reduce;
+  controls.autoRotate=chapter===0&&m==='exploded'&&!reduce;
+  if(chapter===0&&!demoOn&&robot) camTo(camPreset());
   if(m!=='exploded') closePanel();
   if(!silent) hideHint();
 }
@@ -858,6 +1079,62 @@ const cur=base();
 function blend(tg,k){ for(const f of ['z','roll','pitch','yaw']) cur[f]+=(tg[f]-cur[f])*k; LEGS.forEach(l=>{ for(let i=0;i<3;i++) cur.L[l][i]+=(tg.L[l][i]-cur.L[l][i])*k; }); }
 function doAction(a,silent){ action=a; aStart=clock; press('#actions','opt','act',a); if(!silent) hideHint(); }
 function setQ(n,q){ const j=joints[n]; if(!j) return; j.q=j.limit?Math.min(j.limit[1],Math.max(j.limit[0],q)):q; j.rot.quaternion.setFromAxisAngle(j.axis,j.q); }
+
+/* ================= the needle hop + season clock ================= */
+const DOG_R=2.25, DOG_PHI=THREE.MathUtils.degToRad(36);          // dog stands on the record facing the rim
+const DOG_HALF=(.29+.03)/(DOG_R-.39)+.05;                         // angular half-width of the footprint (inner feet) + margin
+const OMEGA=Math.PI*2/SEASON_T, CROUCH=.2, LAND=.28;
+const angTo=a=>((a%(Math.PI*2))+Math.PI*2)%(Math.PI*2);
+let needleA=DOG_PHI+.35, needleTw=null, playing=!reduce, holdUI=false;
+const hop={on:false,t0:0,air:.7};
+function placeDog(onRecord){
+  if(onRecord){ dogRig.position.set(DOG_R*Math.cos(DOG_PHI),0,DOG_R*Math.sin(DOG_PHI)); dogRig.rotation.y=-DOG_PHI; }
+  else { dogRig.position.set(0,0,0); dogRig.rotation.y=0; }
+  dogRig.updateMatrixWorld(true);
+}
+function hopPose(t){                                               // crouch → tucked leap over the needle → soft landing
+  const p=base(), A=hop.air;
+  if(t<CROUCH){ const u=t/CROUCH; LEGS.forEach(k=>p.L[k]=[0,.8+.38*u,-1.5-.9*u]); p.pitch=.06*u; }
+  else if(t<CROUCH+A){ const u=(t-CROUCH)/A, tuck=Math.sin(Math.PI*Math.min(1,u*1.1));
+    p.z=.22*Math.pow(Math.sin(Math.PI*u),.75); p.pitch=-.14*Math.cos(Math.PI*u); p.roll=.05*Math.sin(Math.PI*2*u);
+    LEGS.forEach(k=>p.L[k]=[0,.62+.5*tuck,-1.18-1.0*tuck]); }
+  else { const u=Math.min(1,(t-CROUCH-A)/LAND); LEGS.forEach(k=>p.L[k]=[0,1.02-.22*u,-2.05+.55*u]); p.pitch=.05*(1-u); }
+  return p;
+}
+function needleRunning(){ return hop.on||(playing&&!holdUI&&mode!=='exploded'); }
+function updateSeasons(dt){
+  if(demoOn) return;
+  const prevD=angTo(DOG_PHI-needleA);
+  if(needleTw){ const u=Math.min(1,(clock-needleTw.t0)/.75); needleA=needleTw.a+(needleTw.b-needleTw.a)*ease(u); if(u>=1) needleTw=null; }
+  else if(needleRunning()) needleA+=OMEGA*dt;
+  const d=angTo(DOG_PHI-needleA);                                  // how far the needle still has to go before it reaches the dog
+  if(!needleTw){
+    if(!hop.on&&needleRunning()&&d<DOG_HALF+OMEGA*CROUCH&&d>DOG_HALF*.3){ hop.on=true; hop.t0=clock; hop.air=2*DOG_HALF/OMEGA+.05; if(action!=='idle') doAction('idle',true); }
+    if(prevD<1&&d>5) setSeason((season+1)%4,false);                 // the needle just passed under the dog: next season
+  }
+  if(hop.on&&clock-hop.t0>CROUCH+hop.air+LAND) hop.on=false;
+  needle.rotation.y=-needleA;
+  if(!reduce) label.rotation.z-=dt*.22;
+  tabBars[season].style.width=(angTo(needleA-DOG_PHI)/(Math.PI*2)*100).toFixed(2)+'%';
+}
+const $=id=>document.getElementById(id);
+const tabBars=[...document.querySelectorAll('#stabs i')], sbody=$('sbody');
+let cardTimer=0, harCols=['#221e28','#b04769','#7d7290'];
+function fillCard(se){
+  $('sNo').textContent=`${se.no} / ${se.zh} ${se.en} · ${se.period}`; $('sTitle').textContent=se.title; $('sMeta').textContent=se.meta; $('sDesc').textContent=se.desc;
+  $('sStats').innerHTML=se.stats.map(([b,t])=>`<div><b>${b}</b><span>${t}</span></div>`).join('');
+}
+function setSeason(i,user){
+  const prev=season; season=i; const se=SEASONS[i], st=document.documentElement.style;
+  st.setProperty('--copper',se.accent); st.setProperty('--accent-d',se.accentD); st.setProperty('--sky',se.sky);
+  accentT.copy(se.accentC); harCols=['#221e28',se.accentD,'#7d7290']; drawLabel(se);
+  press('#stabs','x','s',String(i)); tabBars.forEach((b,k)=>{ if(k!==i) b.style.width='0%'; });
+  clearTimeout(cardTimer);
+  if(prev===i&&!user) fillCard(se);
+  else { sbody.classList.add('fade'); cardTimer=setTimeout(()=>{ fillCard(se); sbody.classList.remove('fade'); },260); }
+  if(user){ const prog=angTo(needleA-DOG_PHI); needleTw={a:needleA,b:needleA-prog+.35,t0:clock}; }   // rewind to the start of the season, never through the dog
+}
+function setPlaying(v){ playing=v; const b=$('sPlay'); b.textContent=v?'❚❚':'▶'; b.setAttribute('aria-pressed',String(!v)); b.setAttribute('aria-label',v?'暂停四季轮转':'继续四季轮转'); }
 
 /* ================= ParkourBench course (chapter 01) ================= */
 const course=new THREE.Group(); scene.add(course); course.visible=false;
@@ -923,30 +1200,62 @@ document.getElementById('pkAlgo').addEventListener('click',e=>{ const b=e.target
 document.getElementById('pkReset').addEventListener('click',()=>{ pk.stats={sim:{n:0,p:0,f:0},real:{n:0,p:0,f:0}}; pk.runs=0; pkTable(); pkReset(); });
 
 /* ================= camera ================= */
-const HERO_CAMS={ full:{p:[2.4,1.05,2.9],t:[0,.42,0]}, head:{p:[1.55,.78,.95],t:[.55,.52,0]}, leg:{p:[1.05,.32,1.35],t:[.38,.25,.2]}, orbit:{p:[2.6,1.3,3.1],t:[0,.42,0]} };
+const REC_CAM={p:[1.9,5.0,11.2],t:[.3,1.35,-1.4]};                     // wide shot: record, needle, tree
+const REC_CAM_TALL={p:[2.6,8.2,15.5],t:[.7,.75,-1.6],mob:1};           // portrait screens: higher, so the record clears the season card
+function dogCam(){                                                 // close-up on the dog for x-ray / wireframe / skeleton / exploded
+  const o=new THREE.Vector3(3.0,1.3,3.6).applyAxisAngle(UPV,-DOG_PHI).add(dogRig.position), t=dogRig.position.clone().setY(.42);
+  return {p:o.toArray(),t:t.toArray(),mob:1.6};
+}
 const CH_CAMS={1:{p:[1.05,1.2,3.7],t:[1.05,.42,0]},2:{p:[3.6,2.6,3.9],t:[.3,.35,0]},3:{p:[2.75,1.75,2.45],t:[.78,.62,0]},4:{p:[2.8,1.9,2.05],t:[.8,.58,-.05]},5:{p:[2.3,2.45,.02],t:[.9,.47,0]}};
-function camPreset(){ return chapter===0||chapter>5?HERO_CAMS[camMode]:CH_CAMS[chapter]; }
+const isTall=()=>innerWidth<=820||innerWidth/innerHeight<.9;   // matches the CSS breakpoint where the season card goes full width
+function camPreset(){ return chapter===0||chapter>5?(mode==='exterior'?(isTall()?REC_CAM_TALL:REC_CAM):dogCam()):CH_CAMS[chapter]; }
 function camTo(P,instant){
   const tgt=new THREE.Vector3(...P.t),pos=new THREE.Vector3(...P.p);
-  if(innerWidth/innerHeight<.9) pos.sub(tgt).multiplyScalar(chapter===0?1.6:1.35).add(tgt);
+  if(innerWidth/innerHeight<.9) pos.sub(tgt).multiplyScalar(P.mob||1.35).add(tgt);
   if(instant){ camera.position.copy(pos); controls.target.copy(tgt); controls.update(); }
   else tween={fp:camera.position.clone(),ft:controls.target.clone(),tp:pos,tt:tgt,s:clock};
 }
-function heroCam(name,instant){ camMode=name; press('#cams','opt','cam',name); if(chapter===0) camTo(HERO_CAMS[name],instant); controls.autoRotate=chapter===0&&(name==='orbit'||mode==='exploded')&&!reduce; }
 let viewOff={x:0,y:0},viewOffT={x:0,y:0};
 function setViewOffsetTarget(){
   const w=innerWidth,h=innerHeight,story=chapter>=1&&chapter<=5;
-  viewOffT.x=story&&w>820?-Math.min(w*.17,260):0; viewOffT.y=story&&w<=820?h*.2:0;
+  viewOffT.x=w>820?(story?-Math.min(w*.17,260):(chapter===0?-Math.min(w*.07,120):0)):0; viewOffT.y=w<=820?(story?h*.22:(chapter===0?h*.13:0)):0;
 }
-function setFinish(f){ const v=FIN[f]; allMats.forEach(m=>{ if(m.userData.role==='shell'){ if(m.userData.keep!==undefined) m.userData.keep=v[0]; else m.color.setHex(v[0]); m.roughness=v[1]; m.metalness=v[2]; } }); press('#finishes','opt','finish',f); }
 
 /* ================= UI wiring ================= */
 function press(sel,cls,attr,val){ document.querySelectorAll(sel+' .'+cls+', '+sel+' button').forEach(b=>{ if(b.dataset[attr]!==undefined) b.setAttribute('aria-pressed',String(b.dataset[attr]===val)); }); }
 const on=(id,ev,f)=>document.getElementById(id).addEventListener(ev,f);
 on('modes','click',e=>{ const b=e.target.closest('[data-mode]'); if(b) setMode(b.dataset.mode); });
-on('actions','click',e=>{ const b=e.target.closest('[data-act]'); if(b) doAction(b.dataset.act); });
-on('finishes','click',e=>{ const b=e.target.closest('[data-finish]'); if(b) setFinish(b.dataset.finish); });
-on('cams','click',e=>{ const b=e.target.closest('[data-cam]'); if(b) heroCam(b.dataset.cam); });
+/* season card */
+on('stabs','click',e=>{ const b=e.target.closest('[data-s]'); if(b) setSeason(+b.dataset.s,true); });
+on('sPlay','click',()=>setPlaying(!playing));
+on('sOpen','click',()=>openDemo(SEASONS[season].ch));
+on('season','pointerenter',e=>{ if(e.pointerType==='mouse') holdUI=true; });
+on('season','pointerleave',()=>{ holdUI=false; });
+document.querySelectorAll('[data-season]').forEach(a=>a.addEventListener('click',e=>{ e.preventDefault(); scrollTo({top:0,behavior:reduce?'auto':'smooth'}); setSeason(+a.dataset.season,true); }));
+/* demo dock */
+const demoEl=$('demo'),blinkEl=$('blink');
+function blink(fn){ blinkEl.classList.add('on'); setTimeout(()=>{ fn(); requestAnimationFrame(()=>requestAnimationFrame(()=>blinkEl.classList.remove('on'))); },reduce?0:290); }
+function showPanel(ch){ demoEl.querySelectorAll('.cpanel').forEach(p=>p.hidden=+p.dataset.ch!==ch); $('dTabs').hidden=!(ch===3||ch===4); press('#dTabs','x','ch',String(ch)); }
+function openDemo(ch){
+  if(!robot||demoOn) return;
+  blink(()=>{
+    demoOn=true; document.documentElement.classList.add('lock'); scrollTo(0,0); document.body.classList.add('demo-on');
+    hop.on=false; Object.assign(cur,base()); placeDog(false); needle.visible=spindle.visible=false; hideHint();
+    demoEl.hidden=false; demoEl.scrollTop=0; showPanel(ch); enterChapter(ch);
+    $('dBack').focus({preventScroll:true});
+  });
+}
+function closeDemo(){
+  if(!demoOn) return;
+  blink(()=>{
+    demoOn=false; document.documentElement.classList.remove('lock'); document.body.classList.remove('demo-on'); demoEl.hidden=true;
+    pk.run=false; pk.next=0; Object.assign(cur,base()); placeDog(true); needle.visible=spindle.visible=true;
+    enterChapter(0); $('sOpen').focus({preventScroll:true});
+  });
+}
+on('dBack','click',closeDemo);
+on('dTabs','click',e=>{ const b=e.target.closest('[data-ch]'); if(!b||!demoOn) return; const c=+b.dataset.ch; if(c===chapter) return; showPanel(c); enterChapter(c); });
+addEventListener('keydown',e=>{ if(e.key==='Escape'&&demoOn) closeDemo(); });
 on('lidarMode','click',e=>{ const b=e.target.closest('[data-v]'); if(!b) return; lidarMode=b.dataset.v; press('#lidarMode','x','v',lidarMode); colorLidar(); });
 on('domain','click',e=>{ const b=e.target.closest('[data-v]'); if(!b) return; domain=b.dataset.v; press('#domain','x','v',domain); setRouter(); colorLidar(); });
 on('splat','input',e=>{ splatT=+e.target.value; if(splatT<.5){ tokT=0; document.getElementById('tCount').textContent='—'; } });
@@ -1200,7 +1509,7 @@ function updateHAR(dt){
   H[0].push(THREE.MathUtils.clamp(a/40,-1,1)+(Math.random()-.5)*.06); H[1].push(THREE.MathUtils.clamp(gp/3,-1,1)+(Math.random()-.5)*.05); H[2].push(THREE.MathUtils.clamp(cur.roll*6+Math.sin(cur.L.FL[1]*4)*.2,-1,1));
   H.forEach(h=>{ if(h.length>80) h.shift(); });
   const w=har.width,hh=har.height; hctx.clearRect(0,0,w,hh);
-  ['#efebf3','#d29466','#8e84a0'].forEach((c,j)=>{ hctx.strokeStyle=c; hctx.globalAlpha=j?.9:.7; hctx.lineWidth=2; hctx.beginPath(); H[j].forEach((s,i)=>{ const X=i/79*w,Y=hh/2-s*hh*.42; i?hctx.lineTo(X,Y):hctx.moveTo(X,Y); }); hctx.stroke(); });
+  harCols.forEach((c,j)=>{ hctx.strokeStyle=c; hctx.globalAlpha=j?.9:.7; hctx.lineWidth=2; hctx.beginPath(); H[j].forEach((s,i)=>{ const X=i/79*w,Y=hh/2-s*hh*.42; i?hctx.lineTo(X,Y):hctx.moveTo(X,Y); }); hctx.stroke(); });
   hctx.globalAlpha=1;
   predT+=dt; if(predT>.5){ predT=0; const lag=clock-aStart<.4?'…':''; harp.textContent=lag?'… · —':`${HARL[action]} · ${(.86+Math.random()*.12).toFixed(2)}`; }
 }
@@ -1211,21 +1520,23 @@ function currentChapter(){ const mid=innerHeight*.5; for(const s of sections){ c
 function enterChapter(c){
   const prev=chapter; chapter=c; setViewOffsetTarget();
   if(c!==0){ if(mode!=='exterior') setMode('exterior',true); if(action!=='idle') doAction('idle',true); closePanel(); }
-  controls.autoRotate=c===0&&(mode==='exploded'||camMode==='orbit')&&!reduce;
-  table.visible=c>=3; OBJS.forEach(o=>o.mesh.visible=c>=3); trail.visible=c===5;
+  controls.autoRotate=c===0&&mode==='exploded'&&!reduce;
+  const lab=c>=3&&c<=5; table.visible=lab; OBJS.forEach(o=>o.mesh.visible=lab); trail.visible=c===5;
   course.visible=c===1; if(c===1){ pkShow(); pkReset(); } else if(prev===1){ pk.run=false; pk.next=0; Object.assign(cur,base()); }
   if(c===2&&!lidar&&robot) setTimeout(buildLidar,30);
   if(c!==3){ splatT=0; tokT=0; document.getElementById('splat').value=0; document.getElementById('tokBtn').textContent='压缩成场景 token →'; document.getElementById('tCount').textContent='—'; }
   if(c===5&&prev!==5&&!ex.pts&&rec.length) setTimeout(()=>{ if(chapter===5) startTrace(); },700);
   if(c<=5) camTo(camPreset());
 }
-addEventListener('scroll',()=>{ const c=currentChapter(); if(c!==chapter&&robot) enterChapter(c); },{passive:true});
+addEventListener('scroll',()=>{ if(demoOn) return; const c=currentChapter(); if(c!==chapter&&robot) enterChapter(c); },{passive:true});
 
 /* ================= resize ================= */
 function resize(){ const w=innerWidth,h=innerHeight; renderer.setSize(w,h,false); camera.aspect=w/h; svg.setAttribute('viewBox',`0 0 ${w} ${h}`); setViewOffsetTarget(); applyViewOffset(); }
 function applyViewOffset(){ const w=innerWidth,h=innerHeight; camera.setViewOffset(w,h,viewOff.x,viewOff.y,w,h); camera.updateProjectionMatrix(); }
 addEventListener('resize',resize);
-resize(); camTo(HERO_CAMS.full,true);
+resize(); camTo(camPreset(),true);
+let wasTall=isTall();
+addEventListener('resize',()=>{ const tall=isTall(); if(tall!==wasTall&&chapter===0&&!demoOn) camTo(camPreset(),true); wasTall=tall; });
 
 /* ================= per-frame ================= */
 const look={yaw:0,pitch:0},FOOT_R=.022;
@@ -1233,10 +1544,10 @@ function baseHeight(){ links.base.getWorldPosition(V2); return V2.y/S; }
 function updateDog(dt){
   const t=clock-aStart;
   if(t>DUR[action]){ action='idle'; press('#actions','opt','act','idle'); }
-  const pkFast=chapter===1&&/air|crouch|land/.test(pk.phase);
-  blend(chapter===1?pkPose(dt):poseFor(action,t,clock),damp(dt,(action==='jump'||pkFast)?16:8));
+  const pkFast=chapter===1&&/air|crouch|land/.test(pk.phase), inHop=chapter===0&&hop.on;
+  blend(chapter===1?pkPose(dt):(inHop?hopPose(clock-hop.t0):poseFor(action,t,clock)),damp(dt,(action==='jump'||pkFast||inHop)?16:8));
   let ly=0,lp=0;
-  if(chapter===0&&pointerActive&&clock-lastMove<3&&mode!=='exploded'&&(action==='idle'||action==='sit')){
+  if(chapter===0&&!hop.on&&pointerActive&&clock-lastMove<3&&mode!=='exploded'&&(action==='idle'||action==='sit')){
     ray.setFromCamera(ndc,camera); links.base.getWorldPosition(V2);
     const p=ray.ray.at(camera.position.distanceTo(V2),V); robotRoot.worldToLocal(p);
     ly=THREE.MathUtils.clamp(Math.atan2(p.y,p.x-.2),-.3,.3); lp=THREE.MathUtils.clamp(-Math.atan2(p.z-.3,Math.hypot(p.x,p.y))*.4,-.12,.12);
@@ -1256,34 +1567,33 @@ function updateDog(dt){
   let minC=Infinity; LEGS.forEach(l=>{ links[l+'_foot'].getWorldPosition(V); const g=groundAt(V.x); if(g===null) return; minC=Math.min(minC,V.y-g); });
   const gy=minC===Infinity?pk.lastY:FOOT_R*S-minC; pk.lastY=gy;
   robotRoot.position.y=gy+(cur.z+.04*e)*S; robotRoot.updateMatrixWorld(true);
-  if(chapter===0&&!tween){ const want=HERO_CAMS[camMode].t[1]+.32*e; controls.target.y+=(want-controls.target.y)*damp(dt,4); }
+  if(chapter===0&&!tween&&mode!=='exterior'){ const want=camPreset().t[1]+.32*e; controls.target.y+=(want-controls.target.y)*damp(dt,4); }
 }
 
 function frame(now){
   requestAnimationFrame(frame);
   const dt=Math.min((now-last)/1000,.05); last=now; clock+=dt;
   if(chapter>=6&&scrollY>innerHeight) return;      // CV section covers the canvas
-  if(robot){ updateDog(dt); updateArm(dt); updateHAR(dt); }
-  updateDomain(dt); updateGaussians(dt);
+  if(robot){ updateSeasons(dt); updateDog(dt); updateArm(dt); updateHAR(dt); }
+  updateEnv(dt); updateGaussians(dt);
   if(lidar){ lidarFade+=((chapter===2?1:0)-lidarFade)*damp(dt,4); lidar.visible=lidarFade>.01; lidarMat.uniforms.uFade.value=lidarFade; lidarMat.uniforms.uSweep.value=reduce?0:(clock*2.2)%(Math.PI*2);
     frustum.material.opacity=lidarFade*(lidarMode==='fused'?.9:0); frustum.visible=frustum.material.opacity>.01; }
-  if(!reduce){ const a=dgeo.attributes.position;
-    for(let i=0;i<DUST;i++){ let y=a.array[i*3+1]-dsp[i]*dt; a.array[i*3]+=Math.sin(clock*.3+i)*dt*.05+dt*.06; if(y<0){ y=5; a.array[i*3]=(Math.random()-.5)*14; } if(a.array[i*3]>7) a.array[i*3]=-7; a.array[i*3+1]=y; }
-    a.needsUpdate=true; }
   viewOff.x+=(viewOffT.x-viewOff.x)*damp(dt,4); viewOff.y+=(viewOffT.y-viewOff.y)*damp(dt,4); applyViewOffset();
   if(tween){ const u=Math.min(1,(clock-tween.s)/1.2),k=ease(u); camera.position.lerpVectors(tween.fp,tween.tp,k); controls.target.lerpVectors(tween.ft,tween.tt,k); if(u>=1) tween=null; }
   controls.update();
   renderer.render(scene,camera);
   if(robot){
-    READ.forEach(o=>placeCallout(o,chapter===0&&explodeT<.1&&innerWidth>=560));
+    READ.forEach(o=>placeCallout(o,chapter===0&&mode!=='exterior'&&explodeT<.1&&innerWidth>=560));
     TAGS.forEach(o=>placeCallout(o,chapter===0&&explodeT>.6));
-    if(hintOn){ links.base.getWorldPosition(V); V.y+=.32; V.x+=.35; const s=project(V); hint.style.transform=`translate(${s.x}px,${s.y}px) translate(-50%,-100%)`; hint.style.opacity=(chapter===0&&explodeT<.1)?1:0; }
+    if(hintOn){ links.base.getWorldPosition(V); V.y+=.45; const s=project(V); hint.style.transform=`translate(${s.x}px,${s.y}px) translate(-50%,-100%)`; hint.style.opacity=(chapter===0&&!demoOn&&explodeT<.1&&!tween)?1:0; }
   }
 }
+setSeason(0,false); setPlaying(playing); updateEnv(8); LV.forEach(l=>l.cs=0);   // leaves bloom in on load
+if(document.fonts) document.fonts.ready.then(()=>drawLabel(SEASONS[season]));
 requestAnimationFrame(frame);
 
 loadRobot().then(()=>{
-  buildCallouts(); setMode(mode,true); applyArm(arm.q,arm.grip);
+  placeDog(true); buildCallouts(); setMode(mode,true); applyArm(arm.q,arm.grip);
   loaderEl.style.opacity=0; setTimeout(()=>loaderEl.hidden=true,600);
   const c=currentChapter(); if(c!==chapter) enterChapter(c);
 }).catch(err=>{
